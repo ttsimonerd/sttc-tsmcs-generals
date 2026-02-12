@@ -7,6 +7,7 @@ const ProbabilityConfig: React.FC = () => {
   const [days, setDays] = useState<DayProbability[]>(DEFAULT_DAYS);
   const [weekendEnabled, setWeekendEnabled] = useState(DEFAULT_WEEKEND_RESTRICTION.enabled);
   const [weekendMessage, setWeekendMessage] = useState(DEFAULT_WEEKEND_RESTRICTION.message);
+  const [punishmentRedirectionProb, setPunishmentRedirectionProb] = useState(5);
   const [status, setStatus] = useState<'IDLE' | 'SAVING' | 'SAVED'>('IDLE');
   const [isDirty, setIsDirty] = useState(false);
 
@@ -18,16 +19,17 @@ const ProbabilityConfig: React.FC = () => {
         setDays(parsed.days);
         setWeekendEnabled(parsed.weekendRestriction?.enabled ?? true);
         setWeekendMessage(parsed.weekendRestriction?.message ?? DEFAULT_WEEKEND_RESTRICTION.message);
+        setPunishmentRedirectionProb(parsed.punishmentRedirectionProb ?? 5);
       }
     }
   }, []);
 
   const handleDayChange = (dayNumber: number, field: 'yesProb' | 'noProb', value: string) => {
     const numValue = Math.min(90, Math.max(0, parseInt(value) || 0));
-    
+
     setDays(prev => prev.map(day => {
       if (day.dayNumber !== dayNumber) return day;
-      
+
       // Auto-calculate the other field to always sum to 90 (YES + NO = 90%, Edge = 10%)
       if (field === 'yesProb') {
         return { ...day, yesProb: numValue, noProb: 90 - numValue };
@@ -42,6 +44,7 @@ const ProbabilityConfig: React.FC = () => {
     setDays(DEFAULT_DAYS);
     setWeekendEnabled(DEFAULT_WEEKEND_RESTRICTION.enabled);
     setWeekendMessage(DEFAULT_WEEKEND_RESTRICTION.message);
+    setPunishmentRedirectionProb(5);
     setIsDirty(true);
   };
 
@@ -54,17 +57,18 @@ const ProbabilityConfig: React.FC = () => {
     }
 
     setStatus('SAVING');
-    
+
     const config = {
       days,
       weekendRestriction: {
         enabled: weekendEnabled,
         message: weekendMessage
-      }
+      },
+      punishmentRedirectionProb
     };
-    
+
     localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    
+
     // Dispatch event to notify other components
     window.dispatchEvent(new Event('probability-config-updated'));
 
@@ -102,22 +106,22 @@ const ProbabilityConfig: React.FC = () => {
             <p className="text-zinc-400 text-xs font-mono mt-1">Adjust win/loss probabilities for each day</p>
           </div>
           <div className="flex gap-3">
-            <button 
+            <button
               onClick={handleReset}
               disabled={status === 'SAVING'}
               className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg font-bold text-sm transition-all"
             >
               Reset Defaults
             </button>
-            <button 
+            <button
               onClick={handleSave}
               disabled={status === 'SAVING' || !isDirty}
               className={`px-8 py-2 rounded-lg font-bold text-sm transition-all shadow-lg flex items-center gap-2
-                ${status === 'SAVED' 
-                  ? 'bg-emerald-400 text-black' 
+                ${status === 'SAVED'
+                  ? 'bg-emerald-400 text-black'
                   : status === 'SAVING'
                     ? 'bg-emerald-600 text-white'
-                    : isDirty 
+                    : isDirty
                       ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
                       : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
                 }`}
@@ -144,20 +148,18 @@ const ProbabilityConfig: React.FC = () => {
               onClick={() => { setWeekendEnabled(!weekendEnabled); setIsDirty(true); }}
               title="Toggle Weekend Restriction"
               aria-label="Toggle Weekend Restriction"
-              className={`relative w-16 h-8 rounded-full transition-all duration-300 ${
-                weekendEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
-              }`}
+              className={`relative w-16 h-8 rounded-full transition-all duration-300 ${weekendEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
+                }`}
             >
-              <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-300 ${
-                weekendEnabled ? 'left-9' : 'left-1'
-              }`} />
+              <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-300 ${weekendEnabled ? 'left-9' : 'left-1'
+                }`} />
             </button>
           </div>
-          
+
           {weekendEnabled && (
             <div className="space-y-2 animate-fade-in">
               <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Restriction Message</label>
-              <input 
+              <input
                 type="text"
                 value={weekendMessage}
                 onChange={(e) => { setWeekendMessage(e.target.value); setIsDirty(true); }}
@@ -168,28 +170,53 @@ const ProbabilityConfig: React.FC = () => {
           )}
         </div>
 
+        {/* Punishment Redirection Probability */}
+        <div className="p-6 bg-zinc-900/50 rounded-xl border border-red-500/30 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-bold text-red-400">Punishment Redirection</h3>
+              <p className="text-zinc-500 text-xs">Probability of being redirected to Punishment Wheel after Arbiter roll</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={punishmentRedirectionProb}
+                onChange={(e) => { setPunishmentRedirectionProb(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))); setIsDirty(true); }}
+                className="w-20 bg-black/40 border border-red-500/50 rounded-lg px-3 py-2 text-red-400 font-bold text-center focus:outline-none focus:border-red-400 transition-all"
+              />
+              <span className="text-red-400 font-bold">%</span>
+            </div>
+          </div>
+          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300"
+              style={{ width: `${punishmentRedirectionProb}%` }}
+            />
+          </div>
+        </div>
+
         {/* Day Probabilities */}
         <div className="space-y-4">
           <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Daily Probabilities</label>
-          
+
           <div className="grid gap-4">
             {days.map((day) => {
               const isWeekend = day.dayNumber >= 5;
-              
+
               return (
-                <div 
+                <div
                   key={day.dayNumber}
-                  className={`p-4 rounded-xl border transition-all ${
-                    isWeekend 
-                      ? 'bg-zinc-900/30 border-zinc-800 opacity-60' 
+                  className={`p-4 rounded-xl border transition-all ${isWeekend
+                      ? 'bg-zinc-900/30 border-zinc-800 opacity-60'
                       : 'bg-zinc-800/30 border-white/5'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <span className={`text-sm font-bold uppercase tracking-wider ${
-                        isWeekend ? 'text-zinc-500' : 'text-white'
-                      }`}>
+                      <span className={`text-sm font-bold uppercase tracking-wider ${isWeekend ? 'text-zinc-500' : 'text-white'
+                        }`}>
                         {day.dayName}
                       </span>
                       {isWeekend && (
@@ -205,15 +232,15 @@ const ProbabilityConfig: React.FC = () => {
 
                   {/* Progress Bar - showing YES, NO, and Edge portions */}
                   <div className="h-4 bg-zinc-900 rounded-full overflow-hidden flex mb-4">
-                    <div 
+                    <div
                       className="h-full bg-emerald-500 transition-all duration-300"
                       style={{ width: `${(day.yesProb / 90) * 100}%` }}
                     />
-                    <div 
+                    <div
                       className="h-full bg-red-500 transition-all duration-300"
                       style={{ width: `${(day.noProb / 90) * 100}%` }}
                     />
-                    <div 
+                    <div
                       className="h-full bg-purple-500 transition-all duration-300"
                       style={{ width: '11.11%' }}
                       title="Edge: 10%"
@@ -227,7 +254,7 @@ const ProbabilityConfig: React.FC = () => {
                         <label className="text-xs text-emerald-400 font-bold uppercase">YES Probability</label>
                         <span className="text-xs text-zinc-500 font-mono">{day.yesProb}%</span>
                       </div>
-                      <input 
+                      <input
                         type="range"
                         min="0"
                         max="90"
@@ -236,11 +263,10 @@ const ProbabilityConfig: React.FC = () => {
                         aria-label={`${day.dayName} YES Probability`}
                         onChange={(e) => handleDayChange(day.dayNumber, 'yesProb', e.target.value)}
                         disabled={isWeekend && weekendEnabled}
-                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                          isWeekend && weekendEnabled 
-                            ? 'bg-zinc-800 cursor-not-allowed' 
+                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isWeekend && weekendEnabled
+                            ? 'bg-zinc-800 cursor-not-allowed'
                             : 'bg-zinc-700 accent-emerald-500'
-                        }`}
+                          }`}
                       />
                     </div>
                     <div className="space-y-2">
@@ -248,7 +274,7 @@ const ProbabilityConfig: React.FC = () => {
                         <label className="text-xs text-red-400 font-bold uppercase">NO Probability</label>
                         <span className="text-xs text-zinc-500 font-mono">{day.noProb}%</span>
                       </div>
-                      <input 
+                      <input
                         type="range"
                         min="0"
                         max="90"
@@ -257,11 +283,10 @@ const ProbabilityConfig: React.FC = () => {
                         aria-label={`${day.dayName} NO Probability`}
                         onChange={(e) => handleDayChange(day.dayNumber, 'noProb', e.target.value)}
                         disabled={isWeekend && weekendEnabled}
-                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${
-                          isWeekend && weekendEnabled 
-                            ? 'bg-zinc-800 cursor-not-allowed' 
+                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isWeekend && weekendEnabled
+                            ? 'bg-zinc-800 cursor-not-allowed'
                             : 'bg-zinc-700 accent-red-500'
-                        }`}
+                          }`}
                       />
                     </div>
                   </div>
@@ -278,30 +303,29 @@ const ProbabilityConfig: React.FC = () => {
             {days.map((day) => {
               const isWeekend = day.dayNumber >= 5;
               const isRestricted = isWeekend && weekendEnabled;
-              
+
               return (
-                <div 
+                <div
                   key={day.dayNumber}
-                  className={`flex-1 p-3 rounded-lg text-center space-y-2 ${
-                    isRestricted 
-                      ? 'bg-zinc-800/50 border border-zinc-700/50' 
+                  className={`flex-1 p-3 rounded-lg text-center space-y-2 ${isRestricted
+                      ? 'bg-zinc-800/50 border border-zinc-700/50'
                       : 'bg-zinc-800/30 border border-white/5'
-                  }`}
+                    }`}
                 >
                   <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{day.dayName.slice(0, 3)}</div>
                   <div className={`text-lg font-bold ${getDayColor(isRestricted ? 0 : day.yesProb)}`}>
                     {isRestricted ? '✕' : `${day.yesProb}%`}
                   </div>
                   <div className="h-2 bg-zinc-900 rounded-full overflow-hidden flex">
-                    <div 
+                    <div
                       className="h-full bg-emerald-500"
                       style={{ width: isRestricted ? '0%' : `${(day.yesProb / 90) * 100}%` }}
                     />
-                    <div 
+                    <div
                       className="h-full bg-red-500"
                       style={{ width: isRestricted ? '0%' : `${(day.noProb / 90) * 100}%` }}
                     />
-                    <div 
+                    <div
                       className="h-full bg-purple-500"
                       style={{ width: isRestricted ? '0%' : '11.11%' }}
                     />

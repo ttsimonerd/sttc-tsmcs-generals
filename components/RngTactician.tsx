@@ -330,8 +330,10 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
     setStep('ROLLED');
     refreshStats();
 
-    // 5% Probability check for punishment redirection
-    const isPunishmentRedirection = Math.random() < 0.05;
+    // Read punishment redirection probability from config (default 5%)
+    const probConfig = JSON.parse(localStorage.getItem('probability_config') || '{}');
+    const redirectionProbability = (probConfig.punishmentRedirectionProb ?? 5) / 100;
+    const isPunishmentRedirection = Math.random() < redirectionProbability;
     if (isPunishmentRedirection) {
       // Get the supply that would have been awarded
       const potentialSupply = getMaterials(1)[0].name;
