@@ -37,7 +37,10 @@ export const exportMasterConfig = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ph-manager-config-${new Date().toISOString().split('T')[0]}.json`;
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+    link.download = `tsmcsgenerals-configfile-${dateStr}-${timeStr}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
