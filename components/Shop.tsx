@@ -148,6 +148,12 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       return;
     }
 
+    // Deduct points
+    if (!spendPoints(item.price)) {
+      showNotif("Not enough points!", 'error');
+      return;
+    }
+
     // Process action if defined
     if (item.action && item.action !== ItemAction.NONE) {
       const { success, message } = processItemAction(item.action, item.actionValue);
@@ -253,8 +259,8 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       {/* Notification */}
       {notification && (
         <div className={`p-4 rounded-xl border animate-fade-in ${notification.type === 'success'
-            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-            : 'bg-red-500/20 border-red-500/30 text-red-400'
+          ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
+          : 'bg-red-500/20 border-red-500/30 text-red-400'
           }`}>
           {notification.message}
         </div>
@@ -337,14 +343,14 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
             </div>
 
             <div className={`p-6 rounded-xl animate-fade-in-up ${mysteryReward >= 251 ? 'bg-amber-500/20 border border-amber-500/30' :
-                mysteryReward >= 101 ? 'bg-purple-500/20 border border-purple-500/30' :
-                  mysteryReward >= 51 ? 'bg-blue-500/20 border border-blue-500/30' :
-                    'bg-zinc-500/20 border border-zinc-500/30'
+              mysteryReward >= 101 ? 'bg-purple-500/20 border border-purple-500/30' :
+                mysteryReward >= 51 ? 'bg-blue-500/20 border border-blue-500/30' :
+                  'bg-zinc-500/20 border border-zinc-500/30'
               }`}>
               <span className={`text-4xl font-black ${mysteryReward >= 251 ? 'text-amber-400' :
-                  mysteryReward >= 101 ? 'text-purple-400' :
-                    mysteryReward >= 51 ? 'text-blue-400' :
-                      'text-zinc-300'
+                mysteryReward >= 101 ? 'text-purple-400' :
+                  mysteryReward >= 51 ? 'text-blue-400' :
+                    'text-zinc-300'
                 }`}>
                 +{mysteryReward} Points!
               </span>
@@ -563,8 +569,8 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
             <div
               key={item.id}
               className={`relative p-6 rounded-2xl border transition-all ${isVip
-                  ? 'bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/30'
-                  : 'bg-zinc-900/50 border-white/5 hover:bg-zinc-800/50'
+                ? 'bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/30'
+                : 'bg-zinc-900/50 border-white/5 hover:bg-zinc-800/50'
                 }`}
             >
               {/* VIP badge */}
@@ -592,12 +598,12 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
                   onClick={() => handlePurchase(item)}
                   disabled={!canAfford || !inStock}
                   className={`w-full py-3 rounded-xl font-bold transition-all ${!inStock
-                      ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                      : canAfford
-                        ? isVip
-                          ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:scale-105'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105'
-                        : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
+                    ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
+                    : canAfford
+                      ? isVip
+                        ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:scale-105'
+                        : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105'
+                      : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
                     }`}
                 >
                   {!inStock ? 'OUT OF STOCK' : canAfford ? 'PURCHASE' : 'NOT ENOUGH'}

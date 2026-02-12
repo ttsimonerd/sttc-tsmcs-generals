@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { applyTheme, getSavedTheme, THEME_PRESETS } from '../services/themeService';
+import { resetWins, loadWeekData } from '../services/rngService';
 
 const SystemControl: React.FC = () => {
     const [broadcast, setBroadcast] = useState('');
@@ -100,8 +101,8 @@ const SystemControl: React.FC = () => {
                                 key={theme.id}
                                 onClick={() => handleThemeChange(theme.id)}
                                 className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${currentTheme === theme.id
-                                        ? 'bg-white/10 border-white/20 ring-2 ring-white/10'
-                                        : 'bg-zinc-900/50 border-white/5 hover:border-white/10'
+                                    ? 'bg-white/10 border-white/20 ring-2 ring-white/10'
+                                    : 'bg-zinc-900/50 border-white/5 hover:border-white/10'
                                     }`}
                             >
                                 <div
@@ -128,6 +129,28 @@ const SystemControl: React.FC = () => {
                         </p>
                     </div>
                 </section>
+            </div>
+
+            {/* Debug & Maintenance Zone */}
+            <div className="mt-8 pt-8 border-t border-white/10">
+                <h2 className="text-xl font-bold text-red-500 mb-6 flex items-center gap-2">
+                    <span className="text-2xl">⚡</span> DANGER ZONE
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <button
+                        onClick={() => {
+                            if (confirm('Reset your daily/weekly win progress to 0?')) {
+                                resetWins();
+                                showNotif('Win counter reset to 0.');
+                            }
+                        }}
+                        className="p-4 bg-red-900/20 border border-red-500/30 rounded-xl hover:bg-red-900/40 transition-all text-left group"
+                    >
+                        <h3 className="text-red-400 font-bold group-hover:text-red-300 transition-colors">Reset Win Counter</h3>
+                        <p className="text-red-500/60 text-xs mt-1">Forces the daily "wins" counter back to 0.</p>
+                    </button>
+                    {/* Placeholder for future debug tools */}
+                </div>
             </div>
         </div>
     );
