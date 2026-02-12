@@ -30,15 +30,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-20 md:w-64 glass-panel border-r border-white/10 z-50 flex flex-col pt-8 transition-all duration-300 overflow-y-auto custom-scrollbar">
-      <div className="px-6 mb-10 hidden md:block">
+    <aside className="fixed left-0 top-0 h-screen w-20 md:w-64 glass-panel border-r border-white/10 z-50 flex flex-col transition-all duration-300">
+      {/* Fixed Header */}
+      <div className="px-6 py-8 hidden md:block shrink-0">
         <h1 className="text-2xl font-bold gradient-theme-text">
           TSmc
         </h1>
         <p className="text-xs text-zinc-400 tracking-widest mt-1">GENERALS</p>
       </div>
 
-      <nav className="flex-1 px-3 space-y-2">
+      {/* Scrollable Navigation */}
+      <nav className="flex-1 px-3 space-y-2 overflow-y-auto custom-scrollbar py-2">
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -57,7 +59,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
         ))}
       </nav>
 
-      <div className="p-6 hidden md:block space-y-3">
+      {/* Fixed Footer */}
+      <div className="p-6 hidden md:block space-y-3 shrink-0 border-t border-white/5 bg-zinc-900/40 backdrop-blur-md">
         {/* User Role with VIP Badge */}
         {userRole && (
           <div className="flex items-center gap-2">
