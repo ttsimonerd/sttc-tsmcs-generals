@@ -7,7 +7,7 @@ const ProbabilityConfig: React.FC = () => {
   const [days, setDays] = useState<DayProbability[]>(DEFAULT_DAYS);
   const [weekendEnabled, setWeekendEnabled] = useState(DEFAULT_WEEKEND_RESTRICTION.enabled);
   const [weekendMessage, setWeekendMessage] = useState(DEFAULT_WEEKEND_RESTRICTION.message);
-  const [punishmentRedirectionProb, setPunishmentRedirectionProb] = useState(5);
+  const [punishmentRedirectionProb, setPunishmentRedirectionProb] = useState(10);
   const [status, setStatus] = useState<'IDLE' | 'SAVING' | 'SAVED'>('IDLE');
   const [isDirty, setIsDirty] = useState(false);
 
@@ -19,7 +19,7 @@ const ProbabilityConfig: React.FC = () => {
         setDays(parsed.days);
         setWeekendEnabled(parsed.weekendRestriction?.enabled ?? true);
         setWeekendMessage(parsed.weekendRestriction?.message ?? DEFAULT_WEEKEND_RESTRICTION.message);
-        setPunishmentRedirectionProb(parsed.punishmentRedirectionProb ?? 5);
+        setPunishmentRedirectionProb(parsed.punishmentRedirectionProb ?? 10);
       }
     }
   }, []);
@@ -44,7 +44,7 @@ const ProbabilityConfig: React.FC = () => {
     setDays(DEFAULT_DAYS);
     setWeekendEnabled(DEFAULT_WEEKEND_RESTRICTION.enabled);
     setWeekendMessage(DEFAULT_WEEKEND_RESTRICTION.message);
-    setPunishmentRedirectionProb(5);
+    setPunishmentRedirectionProb(10);
     setIsDirty(true);
   };
 
@@ -209,8 +209,8 @@ const ProbabilityConfig: React.FC = () => {
                 <div
                   key={day.dayNumber}
                   className={`p-4 rounded-xl border transition-all ${isWeekend
-                      ? 'bg-zinc-900/30 border-zinc-800 opacity-60'
-                      : 'bg-zinc-800/30 border-white/5'
+                    ? 'bg-zinc-900/30 border-zinc-800 opacity-60'
+                    : 'bg-zinc-800/30 border-white/5'
                     }`}
                 >
                   <div className="flex items-center justify-between mb-3">
@@ -264,8 +264,8 @@ const ProbabilityConfig: React.FC = () => {
                         onChange={(e) => handleDayChange(day.dayNumber, 'yesProb', e.target.value)}
                         disabled={isWeekend && weekendEnabled}
                         className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isWeekend && weekendEnabled
-                            ? 'bg-zinc-800 cursor-not-allowed'
-                            : 'bg-zinc-700 accent-emerald-500'
+                          ? 'bg-zinc-800 cursor-not-allowed'
+                          : 'bg-zinc-700 accent-emerald-500'
                           }`}
                       />
                     </div>
@@ -284,8 +284,8 @@ const ProbabilityConfig: React.FC = () => {
                         onChange={(e) => handleDayChange(day.dayNumber, 'noProb', e.target.value)}
                         disabled={isWeekend && weekendEnabled}
                         className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isWeekend && weekendEnabled
-                            ? 'bg-zinc-800 cursor-not-allowed'
-                            : 'bg-zinc-700 accent-red-500'
+                          ? 'bg-zinc-800 cursor-not-allowed'
+                          : 'bg-zinc-700 accent-red-500'
                           }`}
                       />
                     </div>
@@ -308,8 +308,8 @@ const ProbabilityConfig: React.FC = () => {
                 <div
                   key={day.dayNumber}
                   className={`flex-1 p-3 rounded-lg text-center space-y-2 ${isRestricted
-                      ? 'bg-zinc-800/50 border border-zinc-700/50'
-                      : 'bg-zinc-800/30 border border-white/5'
+                    ? 'bg-zinc-800/50 border border-zinc-700/50'
+                    : 'bg-zinc-800/30 border border-white/5'
                     }`}
                 >
                   <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{day.dayName.slice(0, 3)}</div>

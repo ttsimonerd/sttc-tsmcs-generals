@@ -136,18 +136,18 @@ export interface VipSupply {
 }
 
 export const DEFAULT_DAYS: DayProbability[] = [
-  { dayName: 'Monday', dayNumber: 0, yesProb: 18, noProb: 72 },
-  { dayName: 'Tuesday', dayNumber: 1, yesProb: 36, noProb: 54 },
-  { dayName: 'Wednesday', dayNumber: 2, yesProb: 36, noProb: 54 },
-  { dayName: 'Thursday', dayNumber: 3, yesProb: 89, noProb: 1 },
-  { dayName: 'Friday', dayNumber: 4, yesProb: 18, noProb: 72 },
+  { dayName: 'Monday', dayNumber: 0, yesProb: 70, noProb: 20 },
+  { dayName: 'Tuesday', dayNumber: 1, yesProb: 10, noProb: 80 },
+  { dayName: 'Wednesday', dayNumber: 2, yesProb: 70, noProb: 20 },
+  { dayName: 'Thursday', dayNumber: 3, yesProb: 1, noProb: 89 },
+  { dayName: 'Friday', dayNumber: 4, yesProb: 80, noProb: 10 },
   { dayName: 'Saturday', dayNumber: 5, yesProb: 0, noProb: 90 },
   { dayName: 'Sunday', dayNumber: 6, yesProb: 0, noProb: 90 }
 ];
 
 export const DEFAULT_WEEKEND_RESTRICTION: WeekendRestriction = {
   enabled: true,
-  message: "No Rolls For The Weekend!"
+  message: "Don't Break The Rule!"
 };
 
 export const DEFAULT_VIP_SUPPLIES: VipSupply[] = [
