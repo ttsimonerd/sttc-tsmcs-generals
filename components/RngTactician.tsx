@@ -330,9 +330,15 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
     setStep('ROLLED');
     refreshStats();
 
-    // Punishment redirection only happens on "Yes" results (not No or Edge)
+
+    // Award points based on result (with double points multiplier)
     if (result.includes('Yes') && !result.includes('Edge')) {
-      // Read punishment redirection probability from config (default 5%)
+      // Win = +20 points (or 40 with double points)
+      const { doubled } = addPointsWithMultiplier(20);
+      addToLog(`+${doubled ? 40 : 20} points for winning!${doubled ? ' (2x!)' : ''}`, 'success');
+
+      // Punishment redirection only happens on "Yes" results (not No or Edge)
+      // Check AFTER awarding points so user gets their reward first
       const probConfig = JSON.parse(localStorage.getItem('probability_config') || '{}');
       const redirectionProbability = (probConfig.punishmentRedirectionProb ?? 5) / 100;
       const isPunishmentRedirection = Math.random() < redirectionProbability;
@@ -340,18 +346,13 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
         // Get the supply that would have been awarded
         const potentialSupply = getMaterials(1)[0].name;
         setRedirectSupply(potentialSupply);
+        setRedirectCountdown(5); // Reset countdown to 5 seconds
         setIsRedirecting(true);
         setStep('IDLE'); // Clear results to focus on warning
         addToLog('SYSTEM INTERFERENCE DETECTED', 'error');
         return;
       }
-    }
 
-    // Award points based on result (with double points multiplier)
-    if (result.includes('Yes') && !result.includes('Edge')) {
-      // Win = +20 points (or 40 with double points)
-      const { doubled } = addPointsWithMultiplier(20);
-      addToLog(`+${doubled ? 40 : 20} points for winning!${doubled ? ' (2x!)' : ''}`, 'success');
       setStep('MULTIPLE_OFFER');
     }
 
