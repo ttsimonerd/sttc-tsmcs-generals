@@ -18,6 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
     { id: AppView.SLOT_MACHINE, label: 'Slots', icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: AppView.PUNISHMENT_WHEEL, label: 'Punishment', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
     { id: AppView.SHOP, label: 'Shop', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
+    { id: AppView.INVENTORY, label: 'Inventory', icon: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10' },
   ];
 
   if (isOwner) {

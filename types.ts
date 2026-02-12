@@ -15,6 +15,7 @@ export enum AppView {
   GAME_TUNER = 'game-tuner',
   SYSTEM_CONTROL = 'system-control',
   CONFIG_EXPORT = 'config-export',
+  INVENTORY = 'inventory',
 }
 
 export type UserRole = 'Owner' | 'Gooner 💔🥀' | 'Migueeeel [Beta Tester]';

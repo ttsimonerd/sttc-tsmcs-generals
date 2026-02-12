@@ -16,6 +16,7 @@ import RiddleEditor from './components/RiddleEditor';
 import GameTuner from './components/GameTuner';
 import SystemControl from './components/SystemControl';
 import ConfigExport from './components/ConfigExport';
+import Inventory from './components/Inventory';
 import { AppView, UserRole, Material, ItemAction, PunishmentOption } from './types';
 import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
@@ -96,6 +97,8 @@ const App: React.FC = () => {
         return ownerOnly(<DatabaseRegistry />);
       case AppView.PROBABILITIES:
         return ownerOnly(<ProbabilityConfig />);
+      case AppView.INVENTORY:
+        return <Inventory />;
       case AppView.MINI_GAMES:
         return <MiniGames onSelectGame={(game) => setCurrentView(game)} />;
       case AppView.CRASH_GAME:
