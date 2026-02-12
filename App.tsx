@@ -20,10 +20,18 @@ import { AppView, UserRole } from './types';
 import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
 // User credentials configuration
-const USER_CREDENTIALS: Record<UserRole, string> = {
+const DEFAULT_USER_CREDENTIALS: Record<UserRole, string> = {
   'Owner': 'goonmaster67',
   'Gooner 💔🥀': 'goontime67',
   'Migueeeel [Beta Tester]': 'Betamiguel1',
+};
+
+const getCredentials = (): Record<UserRole, string> => {
+  const stored = localStorage.getItem('custom-user-passwords');
+  if (stored) {
+    return { ...DEFAULT_USER_CREDENTIALS, ...JSON.parse(stored) };
+  }
+  return DEFAULT_USER_CREDENTIALS;
 };
 
 // Simple theme application function
@@ -69,7 +77,8 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const expectedPassword = USER_CREDENTIALS[userRole];
+    const creds = getCredentials();
+    const expectedPassword = creds[userRole];
     if (password === expectedPassword) {
       setCurrentUser(userRole); // Set the current user for user-specific data
       setIsLoggedIn(true);

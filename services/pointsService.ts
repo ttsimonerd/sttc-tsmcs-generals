@@ -13,9 +13,9 @@ export const setCurrentUser = (user: string): void => {
 };
 
 // Helper to get user-specific key
-const userKey = (baseKey: string): string => {
-  const user = getCurrentUser();
-  return `${user}::${baseKey}`;
+const userKey = (baseKey: string, user?: string): string => {
+  const targetUser = user || getCurrentUser();
+  return `${targetUser}::${baseKey}`;
 };
 
 // Base keys (will be prefixed with user)
@@ -123,13 +123,13 @@ const DEFAULT_PUNISHMENTS: PunishmentOption[] = [
 ];
 
 // Points functions
-export const getPoints = (): number => {
-  const stored = localStorage.getItem(userKey(POINTS_KEY));
-  return stored ? parseInt(stored, 10) : 100; // Start with 100 points
+export const getPoints = (user?: string): number => {
+  const stored = localStorage.getItem(userKey(POINTS_KEY, user));
+  return stored ? parseInt(stored, 10) : 100;
 };
 
-export const setPoints = (points: number): void => {
-  localStorage.setItem(userKey(POINTS_KEY), Math.max(0, points).toString());
+export const setPoints = (points: number, user?: string): void => {
+  localStorage.setItem(userKey(POINTS_KEY, user), Math.max(0, points).toString());
 };
 
 export const addPoints = (amount: number): number => {
@@ -193,16 +193,16 @@ export const resetPunishments = (): void => {
 export const canClaimDailyBonus = (): boolean => {
   const lastClaim = localStorage.getItem(userKey(LAST_DAILY_BONUS_KEY));
   if (!lastClaim) return true;
-  
+
   const lastDate = new Date(lastClaim);
   const today = new Date();
-  
+
   return lastDate.toDateString() !== today.toDateString();
 };
 
 export const claimDailyBonus = (): number => {
   if (!canClaimDailyBonus()) return 0;
-  
+
   localStorage.setItem(userKey(LAST_DAILY_BONUS_KEY), new Date().toISOString());
   return addPoints(5);
 };
@@ -256,14 +256,14 @@ export interface ItemInventory {
 }
 
 // Get inventory (count of each consumable item) - user-specific
-export const getItemInventory = (): ItemInventory => {
-  const stored = localStorage.getItem(userKey(ITEM_INVENTORY_KEY));
+export const getItemInventory = (user?: string): ItemInventory => {
+  const stored = localStorage.getItem(userKey(ITEM_INVENTORY_KEY, user));
   return stored ? JSON.parse(stored) : {};
 };
 
 // Save inventory - user-specific
-export const saveItemInventory = (inventory: ItemInventory): void => {
-  localStorage.setItem(userKey(ITEM_INVENTORY_KEY), JSON.stringify(inventory));
+export const saveItemInventory = (inventory: ItemInventory, user?: string): void => {
+  localStorage.setItem(userKey(ITEM_INVENTORY_KEY, user), JSON.stringify(inventory));
 };
 
 // Add item to inventory (for consumables)
@@ -333,13 +333,17 @@ export const clearDoublePoints = (): void => {
 // ==========================================
 
 // Check if user owns VIP badge (user-specific)
-export const hasVipBadge = (): boolean => {
-  return localStorage.getItem(userKey(VIP_BADGE_KEY)) === 'true';
+export const hasVipBadge = (user?: string): boolean => {
+  return localStorage.getItem(userKey(VIP_BADGE_KEY, user)) === 'true';
 };
 
 // Grant VIP badge (permanent) (user-specific)
-export const grantVipBadge = (): void => {
-  localStorage.setItem(userKey(VIP_BADGE_KEY), 'true');
+export const setVipBadge = (status: boolean, user?: string): void => {
+  localStorage.setItem(userKey(VIP_BADGE_KEY, user), status ? 'true' : 'false');
+};
+
+export const grantVipBadge = (user?: string): void => {
+  setVipBadge(true, user);
 };
 
 // ==========================================
@@ -354,17 +358,17 @@ export const openMysteryBox = (): number => {
     { min: 101, max: 250, weight: 15 },  // Rare: 101-250 pts (15% chance)
     { min: 251, max: 500, weight: 10 },  // Legendary: 251-500 pts (10% chance)
   ];
-  
+
   const totalWeight = ranges.reduce((sum, r) => sum + r.weight, 0);
   let random = Math.random() * totalWeight;
-  
+
   for (const range of ranges) {
     random -= range.weight;
     if (random <= 0) {
       return Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
     }
   }
-  
+
   return ranges[0].min; // Fallback
 };
 
