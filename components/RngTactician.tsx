@@ -8,34 +8,7 @@ type Step = 'IDLE' | 'ROLLING' | 'ROLLED' | 'MULTIPLE_OFFER' | 'MATERIALS_OFFER'
 type ResultAnimation = 'idle' | 'pulse' | 'glow';
 type RedeemerStatus = 'IDLE' | 'CORRECT' | 'WRONG';
 
-// Local offline riddles (no API needed)
-const LOCAL_RIDDLES: RiddleResponse[] = [
-  { question: "What has keys but can't open locks?", answer: "Piano" },
-  { question: "What gets wet while drying?", answer: "Towel" },
-  { question: "What has many teeth but can't bite?", answer: "Comb" },
-  { question: "What has hands but can't clap?", answer: "Clock" },
-  { question: "What gets bigger when you take away?", answer: "Hole" },
-  { question: "What belongs to you but others use it more?", answer: "Name" },
-  { question: "What has a head and a tail but no body?", answer: "Coin" },
-  { question: "What has ears but cannot hear?", answer: "Corn" },
-  { question: "What has eyes but cannot see?", answer: "Potato" },
-  { question: "What has a neck but no head?", answer: "Bottle" },
-  { question: "What has cities but no houses?", answer: "Map" },
-  { question: "What has mountains but no trees?", answer: "Map" },
-  { question: "What has water but no fish?", answer: "Map" },
-  { question: "What runs but never walks?", answer: "Water" },
-  { question: "What walks on four legs in the morning, two at noon, and three in the evening?", answer: "Human" },
-  { question: "What is so fragile that saying its name breaks it?", answer: "Silence" },
-  { question: "What can you hold in your left hand but not in your right?", answer: "Right elbow" },
-  { question: "What has to be broken before you use it?", answer: "Egg" },
-  { question: "What is always in front of you but can't be seen?", answer: "Future" },
-  { question: "What invention lets you look right through a wall?", answer: "Window" },
-  { question: "What has many rings but no fingers?", answer: "Phone" },
-  { question: "What begins and has no end?", answer: "Circle" },
-  { question: "What has a bed but doesn't sleep?", answer: "River" },
-  { question: "What has a bank but no money?", answer: "River" },
-  { question: "What has teeth but can't eat?", answer: "Comb" }
-];
+import { getRiddles } from '../services/riddleService';
 
 // Simplified labels for the roulette (SI/NO)
 const ROULETTE_LABELS = ['NO', 'SI', 'NO', 'SI', 'NO', 'SI'];
@@ -132,10 +105,10 @@ const RouletteWheel: React.FC<{
       <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-30">
         <div
           className={`w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] ${showResult
-              ? finalResult.includes('Edge')
-                ? 'border-t-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]'
-                : 'border-t-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]'
-              : 'border-t-zinc-400 drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]'
+            ? finalResult.includes('Edge')
+              ? 'border-t-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]'
+              : 'border-t-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]'
+            : 'border-t-zinc-400 drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]'
             }`}
         />
       </div>
@@ -201,10 +174,10 @@ const RouletteWheel: React.FC<{
       {/* Center cap */}
       <div
         className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center shadow-lg z-10 transition-all duration-300 ${showResult
-            ? finalResult.includes('Edge')
-              ? 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-500/30 to-purple-600/20 border-purple-400'
-              : 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-emerald-400'
-            : 'w-14 h-14 md:w-18 md:h-18 bg-gradient-to-br from-zinc-600 to-zinc-800 border-zinc-500'
+          ? finalResult.includes('Edge')
+            ? 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-500/30 to-purple-600/20 border-purple-400'
+            : 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-emerald-400'
+          : 'w-14 h-14 md:w-18 md:h-18 bg-gradient-to-br from-zinc-600 to-zinc-800 border-zinc-500'
           }`}
         style={{ border: '2px solid' }}
       >
@@ -216,12 +189,12 @@ const RouletteWheel: React.FC<{
       {/* Subtle outer glow */}
       <div
         className={`absolute inset-0 rounded-full transition-all duration-500 ${isSpinning && isEdgeResult
-            ? 'bg-purple-500/20 blur-xl'
-            : showResult
-              ? finalResult.includes('Edge')
-                ? 'bg-purple-500/20 blur-xl'
-                : 'bg-emerald-500/10 blur-xl'
-              : 'bg-zinc-800/5 blur-md'
+          ? 'bg-purple-500/20 blur-xl'
+          : showResult
+            ? finalResult.includes('Edge')
+              ? 'bg-purple-500/20 blur-xl'
+              : 'bg-emerald-500/10 blur-xl'
+            : 'bg-zinc-800/5 blur-md'
           }`}
       />
     </div>
@@ -401,14 +374,15 @@ const RngTactician: React.FC = () => {
     // Get previously failed questions
     const storedFailed = JSON.parse(localStorage.getItem('redeemer_failed_questions') || '[]');
 
+    const riddles = getRiddles();
     // Filter out used riddles
-    const availableRiddles = LOCAL_RIDDLES.filter((r) => !storedFailed.includes(r.question));
+    const availableRiddles = riddles.filter((r) => !storedFailed.includes(r.question));
 
     // Select random riddle
     const randomRiddle =
       availableRiddles.length > 0
         ? availableRiddles[Math.floor(Math.random() * availableRiddles.length)]
-        : LOCAL_RIDDLES[Math.floor(Math.random() * LOCAL_RIDDLES.length)];
+        : riddles[Math.floor(Math.random() * riddles.length)];
 
     setCurrentRiddle(randomRiddle);
     setRedeemerOpen(true);
@@ -513,12 +487,12 @@ const RngTactician: React.FC = () => {
                     <span className="text-zinc-600 font-mono mr-2">[{log.time}]</span>
                     <span
                       className={`${log.type === 'success'
-                          ? 'text-emerald-400'
-                          : log.type === 'error'
-                            ? 'text-red-400'
-                            : log.type === 'warning'
-                              ? 'text-yellow-500'
-                              : 'text-zinc-400'
+                        ? 'text-emerald-400'
+                        : log.type === 'error'
+                          ? 'text-red-400'
+                          : log.type === 'warning'
+                            ? 'text-yellow-500'
+                            : 'text-zinc-400'
                         }`}
                     >
                       {log.message}
@@ -556,8 +530,8 @@ const RngTactician: React.FC = () => {
                     onClick={handleSummonRedeemer}
                     disabled={weekData.yes_count < 3}
                     className={`w-full py-2 border rounded-lg text-xs font-bold uppercase transition-all ${weekData.yes_count < 3
-                        ? 'bg-zinc-800 text-zinc-600 border-zinc-700 cursor-not-allowed'
-                        : 'bg-red-500/10 hover:bg-red-500/30 text-red-400 border-red-500/50 hover:scale-[1.02]'
+                      ? 'bg-zinc-800 text-zinc-600 border-zinc-700 cursor-not-allowed'
+                      : 'bg-red-500/10 hover:bg-red-500/30 text-red-400 border-red-500/50 hover:scale-[1.02]'
                       }`}
                   >
                     {weekData.yes_count < 3 ? 'Not Available (Need 3 Wins)' : 'Challenge Fate'}
@@ -583,8 +557,8 @@ const RngTactician: React.FC = () => {
                           onClick={handleSubmitRedemption}
                           disabled={!userAnswer.trim()}
                           className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${userAnswer.trim()
-                              ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]'
-                              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+                            ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]'
+                            : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
                             }`}
                         >
                           Submit Answer
@@ -738,12 +712,12 @@ const RngTactician: React.FC = () => {
                 <p className="text-zinc-400 uppercase tracking-widest text-xs animate-fade-in-up">Outcome</p>
                 <h2
                   className={`text-6xl font-black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
-                      ? 'text-emerald-400 animate-success-pop'
-                      : rollResult.includes('Rule') || rollResult.includes('Weekend')
-                        ? 'text-yellow-500 animate-warning-pulse'
-                        : rollResult.includes('Edge')
-                          ? 'text-purple-400 animate-success-pop'
-                          : 'text-red-500 animate-failure-shake'
+                    ? 'text-emerald-400 animate-success-pop'
+                    : rollResult.includes('Rule') || rollResult.includes('Weekend')
+                      ? 'text-yellow-500 animate-warning-pulse'
+                      : rollResult.includes('Edge')
+                        ? 'text-purple-400 animate-success-pop'
+                        : 'text-red-500 animate-failure-shake'
                     }`}
                 >
                   <span
@@ -793,8 +767,8 @@ const RngTactician: React.FC = () => {
                     <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10">
                       <span
                         className={`text-sm font-mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
-                            ? 'text-yellow-500 animate-warning-shake inline-block'
-                            : 'text-red-400 animate-failure-pulse inline-block'
+                          ? 'text-yellow-500 animate-warning-shake inline-block'
+                          : 'text-red-400 animate-failure-pulse inline-block'
                           }`}
                       >
                         {rollResult.includes('Rule') || rollResult.includes('Weekend')
