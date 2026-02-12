@@ -15,6 +15,7 @@ import UserManagement from './components/UserManagement';
 import RiddleEditor from './components/RiddleEditor';
 import GameTuner from './components/GameTuner';
 import SystemControl from './components/SystemControl';
+import ConfigExport from './components/ConfigExport';
 import { AppView, UserRole } from './types';
 import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
@@ -111,6 +112,8 @@ const App: React.FC = () => {
         return ownerOnly(<GameTuner />);
       case AppView.SYSTEM_CONTROL:
         return ownerOnly(<SystemControl />);
+      case AppView.CONFIG_EXPORT:
+        return ownerOnly(<ConfigExport />);
       default:
         return <RngTactician />;
     }

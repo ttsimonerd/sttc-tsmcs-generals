@@ -13,7 +13,8 @@ export enum AppView {
   USER_MANAGEMENT = 'user-management',
   RIDDLE_EDITOR = 'riddle-editor',
   GAME_TUNER = 'game-tuner',
-  SYSTEM_CONTROL = 'system-control'
+  SYSTEM_CONTROL = 'system-control',
+  CONFIG_EXPORT = 'config-export',
 }
 
 export type UserRole = 'Owner' | 'Gooner 💔🥀' | 'Migueeeel [Beta Tester]';

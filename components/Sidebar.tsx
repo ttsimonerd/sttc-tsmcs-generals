@@ -64,10 +64,26 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
       </nav>
 
       {/* Fixed Footer */}
-      <div className="p-6 hidden md:block space-y-3 shrink-0 border-t border-white/5 bg-zinc-900/40 backdrop-blur-md">
+      <div className="p-4 hidden md:block space-y-3 shrink-0 border-t border-white/5 bg-zinc-900/40 backdrop-blur-md">
+        {isOwner && (
+          <button
+            onClick={() => onViewChange(AppView.CONFIG_EXPORT)}
+            className={`w-full py-3 rounded-xl font-bold text-xs uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2
+              ${currentView === AppView.CONFIG_EXPORT
+                ? 'bg-red-600 text-white shadow-lg shadow-red-600/40'
+                : 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white shadow-lg shadow-red-500/10'
+              }`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+            </svg>
+            SOLIDIFY CONFIG
+          </button>
+        )}
+
         {/* User Role with VIP Badge */}
         {userRole && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-2">
             {hasVipBadge && (
               <span className="text-amber-400 animate-pulse" title="VIP Member">👑</span>
             )}
@@ -76,9 +92,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
             </span>
           </div>
         )}
-        <div className="text-xs text-zinc-600">
-          <p>Beta</p>
-          <p>v1.5.0</p>
+        <div className="text-[10px] text-zinc-600 flex justify-between items-center">
+          <span>Ph-Manager v2.0</span>
+          <span>STTC-TSMCS</span>
         </div>
       </div>
     </aside>
