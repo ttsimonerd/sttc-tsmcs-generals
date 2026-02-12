@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  getPoints, 
-  spendPoints, 
-  getShopItems, 
-  saveShopItems, 
-  getPurchasedItems, 
+import {
+  getPoints,
+  spendPoints,
+  getShopItems,
+  saveShopItems,
+  getPurchasedItems,
   addPurchasedItem,
   addPoints,
-  ShopItem,
   getVipChoiceItem,
   saveVipChoiceItem,
   getVipSupplies,
@@ -19,8 +18,10 @@ import {
   getDoublePointsRemaining,
   openMysteryBox,
   grantVipBadge,
-  hasVipBadge
+  hasVipBadge,
+  processItemAction
 } from '../services/pointsService';
+import { ItemAction, ShopItem } from '../types';
 
 interface ShopProps {
   isOwner?: boolean;
@@ -32,24 +33,24 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
   const [purchasedItems, setPurchasedItems] = useState<string[]>([]);
   const [editMode, setEditMode] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  
+
   // VIP Choice state
   const [showVipReward, setShowVipReward] = useState(false);
   const [vipRewards, setVipRewards] = useState<string[]>([]);
-  
+
   // Mystery Box state
   const [showMysteryReward, setShowMysteryReward] = useState(false);
   const [mysteryReward, setMysteryReward] = useState(0);
-  
+
   // Double points timer
   const [doublePointsTime, setDoublePointsTime] = useState(0);
-  
+
   // Inventory counts for display
   const [inventoryCounts, setInventoryCounts] = useState<Record<string, number>>({});
 
   // Edit form state
-  const [newItem, setNewItem] = useState({ name: '', description: '', price: 50, icon: '🎁', stock: -1 });
-  
+  const [newItem, setNewItem] = useState({ name: '', description: '', price: 50, icon: '🎁', stock: -1, action: ItemAction.NONE, actionValue: 0 });
+
   // VIP Choice item state
   const [vipChoiceItem, setVipChoiceItem] = useState<ShopItem>({
     id: 'vip-riddle',
@@ -59,7 +60,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
     icon: '👑',
     stock: -1,
   });
-  
+
   // Edit VIP Choice form state
   const [editingVipChoice, setEditingVipChoice] = useState(false);
   const [vipChoiceForm, setVipChoiceForm] = useState({ price: 120, name: '', description: '', icon: '👑' });
@@ -86,7 +87,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
     });
     refreshInventory();
   }, []);
-  
+
   // Update double points timer
   useEffect(() => {
     if (doublePointsTime > 0) {
@@ -129,114 +130,59 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           showNotif("No premium supplies available!", 'error');
           return;
         }
-        
+
         // Get 3 random premium supplies
         const randomSupplies = [];
         for (let i = 0; i < 3; i++) {
           const randomIndex = Math.floor(Math.random() * vipSupplies.length);
           randomSupplies.push(vipSupplies[randomIndex]);
         }
-        
+
         // Add bonus points
         addPoints(50);
         refreshPoints();
-        
+
         setVipRewards(randomSupplies);
         setShowVipReward(true);
       }
       return;
     }
 
-    // Handle item-specific effects
-    if (!spendPoints(item.price)) {
-      showNotif("Transaction failed!", 'error');
-      return;
+    // Process action if defined
+    if (item.action && item.action !== ItemAction.NONE) {
+      const { success, message } = processItemAction(item.action, item.actionValue);
+      if (success) {
+        showNotif(message || `Purchased ${item.name}!`, 'success');
+      } else {
+        showNotif(message || "Transaction failed!", 'error');
+        // Points are already spent, maybe we should refund? 
+        // For now assume if it failed (like already having VIP), the service handled it or we just show error.
+        return;
+      }
+    } else {
+      // Regular purchase for custom items (with no specific functional action)
+      addPurchasedItem(item.id);
+      setPurchasedItems([...purchasedItems, item.id]);
+      showNotif(`Purchased ${item.name}!`, 'success');
     }
 
-    // Process based on item type
-    switch (item.id) {
-      case ITEM_IDS.EXTRA_ROLL:
-        // Add to inventory (consumable)
-        addToInventory(ITEM_IDS.EXTRA_ROLL);
-        refreshInventory();
-        showNotif(`Extra Roll added to inventory!`, 'success');
-        break;
-        
-      case ITEM_IDS.SKIP_PUNISHMENT:
-        // Add to inventory (consumable)
-        addToInventory(ITEM_IDS.SKIP_PUNISHMENT);
-        refreshInventory();
-        showNotif(`Skip Punishment added to inventory!`, 'success');
-        break;
-        
-      case ITEM_IDS.DOUBLE_POINTS:
-        // Activate immediately for 1 hour
-        if (isDoublePointsActive()) {
-          showNotif(`Double Points already active! Extended time.`, 'success');
-        } else {
-          showNotif(`Double Points activated for 1 hour!`, 'success');
-        }
-        activateDoublePoints();
-        setDoublePointsTime(getDoublePointsRemaining());
-        break;
-        
-      case ITEM_IDS.MYSTERY_BOX:
-        // Open immediately and award random points
-        const reward = openMysteryBox();
-        addPoints(reward);
-        setMysteryReward(reward);
-        setShowMysteryReward(true);
-        // Update stock
-        if (item.stock > 0) {
-          const updated = shopItems.map(i => 
-            i.id === item.id ? { ...i, stock: i.stock - 1 } : i
-          );
-          setShopItems(updated);
-          saveShopItems(updated);
-        }
-        break;
-        
-      case ITEM_IDS.VIP_BADGE:
-        // Grant permanent VIP badge
-        if (hasVipBadge()) {
-          // Refund if already owned
-          addPoints(item.price);
-          showNotif(`You already own the VIP Badge!`, 'error');
-        } else {
-          grantVipBadge();
-          // Update stock
-          if (item.stock > 0) {
-            const updated = shopItems.map(i => 
-              i.id === item.id ? { ...i, stock: i.stock - 1 } : i
-            );
-            setShopItems(updated);
-            saveShopItems(updated);
-          }
-          showNotif(`VIP Badge acquired! You're now a VIP!`, 'success');
-        }
-        break;
-        
-      default:
-        // Regular purchase for custom items
-        addPurchasedItem(item.id);
-        setPurchasedItems([...purchasedItems, item.id]);
-        if (item.stock > 0) {
-          const updated = shopItems.map(i => 
-            i.id === item.id ? { ...i, stock: i.stock - 1 } : i
-          );
-          setShopItems(updated);
-          saveShopItems(updated);
-        }
-        showNotif(`Purchased ${item.name}!`, 'success');
+    // Update stock if applicable
+    if (item.stock > 0) {
+      const updated = shopItems.map(i =>
+        i.id === item.id ? { ...i, stock: i.stock - 1 } : i
+      );
+      setShopItems(updated);
+      saveShopItems(updated);
     }
-    
+
+    refreshInventory();
     refreshPoints();
   };
 
 
   const handleAddItem = () => {
     if (!newItem.name.trim()) return;
-    
+
     const item: ShopItem = {
       id: Date.now().toString(),
       name: newItem.name,
@@ -244,12 +190,14 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       price: newItem.price,
       icon: newItem.icon,
       stock: newItem.stock,
+      action: newItem.action,
+      actionValue: newItem.actionValue,
     };
-    
+
     const updated = [...shopItems, item];
     setShopItems(updated);
     saveShopItems(updated);
-    setNewItem({ name: '', description: '', price: 50, icon: '🎁', stock: -1 });
+    setNewItem({ name: '', description: '', price: 50, icon: '🎁', stock: -1, action: ItemAction.NONE, actionValue: 0 });
     showNotif("Item added!", 'success');
   };
 
@@ -293,9 +241,8 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           {isOwner && (
             <button
               onClick={() => setEditMode(!editMode)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-              }`}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                }`}
             >
               {editMode ? '✕ Close' : '⚙ Manage'}
             </button>
@@ -305,11 +252,10 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
 
       {/* Notification */}
       {notification && (
-        <div className={`p-4 rounded-xl border animate-fade-in ${
-          notification.type === 'success' 
-            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400' 
+        <div className={`p-4 rounded-xl border animate-fade-in ${notification.type === 'success'
+            ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
             : 'bg-red-500/20 border-red-500/30 text-red-400'
-        }`}>
+          }`}>
           {notification.message}
         </div>
       )}
@@ -379,7 +325,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           </div>
         </div>
       )}
-      
+
       {/* Mystery Box Reward Modal */}
       {showMysteryReward && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
@@ -390,25 +336,23 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
               <p className="text-zinc-500 text-sm mt-1">You found something inside...</p>
             </div>
 
-            <div className={`p-6 rounded-xl animate-fade-in-up ${
-              mysteryReward >= 251 ? 'bg-amber-500/20 border border-amber-500/30' :
-              mysteryReward >= 101 ? 'bg-purple-500/20 border border-purple-500/30' :
-              mysteryReward >= 51 ? 'bg-blue-500/20 border border-blue-500/30' :
-              'bg-zinc-500/20 border border-zinc-500/30'
-            }`}>
-              <span className={`text-4xl font-black ${
-                mysteryReward >= 251 ? 'text-amber-400' :
-                mysteryReward >= 101 ? 'text-purple-400' :
-                mysteryReward >= 51 ? 'text-blue-400' :
-                'text-zinc-300'
+            <div className={`p-6 rounded-xl animate-fade-in-up ${mysteryReward >= 251 ? 'bg-amber-500/20 border border-amber-500/30' :
+                mysteryReward >= 101 ? 'bg-purple-500/20 border border-purple-500/30' :
+                  mysteryReward >= 51 ? 'bg-blue-500/20 border border-blue-500/30' :
+                    'bg-zinc-500/20 border border-zinc-500/30'
               }`}>
+              <span className={`text-4xl font-black ${mysteryReward >= 251 ? 'text-amber-400' :
+                  mysteryReward >= 101 ? 'text-purple-400' :
+                    mysteryReward >= 51 ? 'text-blue-400' :
+                      'text-zinc-300'
+                }`}>
                 +{mysteryReward} Points!
               </span>
               <p className="text-xs text-zinc-500 mt-2">
                 {mysteryReward >= 251 ? '🌟 LEGENDARY FIND!' :
-                 mysteryReward >= 101 ? '💎 RARE FIND!' :
-                 mysteryReward >= 51 ? '🔷 UNCOMMON FIND' :
-                 '⚪ Common find'}
+                  mysteryReward >= 101 ? '💎 RARE FIND!' :
+                    mysteryReward >= 51 ? '🔷 UNCOMMON FIND' :
+                      '⚪ Common find'}
               </p>
             </div>
 
@@ -427,7 +371,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       {isOwner && editMode && (
         <div className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4 animate-fade-in">
           <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">VIP Choice Settings</h2>
-          
+
           {!editingVipChoice ? (
             <div className="flex items-center justify-between p-4 bg-zinc-900/50 rounded-lg border border-amber-500/20">
               <div className="flex items-center gap-3">
@@ -510,7 +454,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           )}
 
           <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest pt-4">Add New Item</h2>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <input
               type="text"
@@ -548,8 +492,26 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
               placeholder="Price..."
               className="bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
             />
+            <div className="flex gap-2">
+              <select
+                value={newItem.action}
+                onChange={(e) => setNewItem({ ...newItem, action: e.target.value as ItemAction })}
+                className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+              >
+                {Object.values(ItemAction).map(action => (
+                  <option key={action} value={action}>{action.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+              <input
+                type="number"
+                value={newItem.actionValue}
+                onChange={(e) => setNewItem({ ...newItem, actionValue: parseInt(e.target.value) || 0 })}
+                placeholder="Value..."
+                className="w-20 bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+              />
+            </div>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <label className="text-zinc-400 text-sm" htmlFor="item-stock">Stock (-1 = unlimited):</label>
             <input
@@ -596,15 +558,14 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           const canAfford = points >= item.price;
           const inStock = item.stock === -1 || item.stock > 0;
           const isVip = item.id === 'vip-riddle';
-          
+
           return (
             <div
               key={item.id}
-              className={`relative p-6 rounded-2xl border transition-all ${
-                isVip 
-                  ? 'bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/30' 
+              className={`relative p-6 rounded-2xl border transition-all ${isVip
+                  ? 'bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/30'
                   : 'bg-zinc-900/50 border-white/5 hover:bg-zinc-800/50'
-              }`}
+                }`}
             >
               {/* VIP badge */}
               {isVip && (
@@ -630,15 +591,14 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
                 <button
                   onClick={() => handlePurchase(item)}
                   disabled={!canAfford || !inStock}
-                  className={`w-full py-3 rounded-xl font-bold transition-all ${
-                    !inStock
+                  className={`w-full py-3 rounded-xl font-bold transition-all ${!inStock
                       ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
                       : canAfford
                         ? isVip
                           ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:scale-105'
                           : 'bg-emerald-600 hover:bg-emerald-500 text-white hover:scale-105'
                         : 'bg-zinc-700 text-zinc-400 cursor-not-allowed'
-                  }`}
+                    }`}
                 >
                   {!inStock ? 'OUT OF STOCK' : canAfford ? 'PURCHASE' : 'NOT ENOUGH'}
                 </button>

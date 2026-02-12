@@ -61,6 +61,34 @@ export interface RiddleResponse {
   answer: string;
 }
 
+export enum ItemAction {
+  NONE = 'NONE',
+  GIVE_POINTS = 'GIVE_POINTS',
+  GIVE_EXTRA_ROLL = 'GIVE_EXTRA_ROLL',
+  GIVE_SKIP_PUNISHMENT = 'GIVE_SKIP_PUNISHMENT',
+  DOUBLE_POINTS_BUFF = 'DOUBLE_POINTS_BUFF',
+  RANDOM_POINTS_BOX = 'RANDOM_POINTS_BOX',
+  GRANT_VIP = 'GRANT_VIP',
+}
+
+export interface Material {
+  name: string;
+  icon?: string;
+  action?: ItemAction;
+  actionValue?: number;
+}
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  icon: string;
+  stock: number;
+  action?: ItemAction;
+  actionValue?: number;
+}
+
 export interface FailedLog {
   question: string;
   answer: string;

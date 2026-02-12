@@ -1,5 +1,5 @@
 import { MATERIALS_LIST } from "../data/materials";
-import { DEFAULT_DAYS, DEFAULT_WEEKEND_RESTRICTION, DayProbability, ProbabilityConfig } from "../types";
+import { DEFAULT_DAYS, DEFAULT_WEEKEND_RESTRICTION, DayProbability, ProbabilityConfig, Material, ItemAction } from "../types";
 import { getCurrentUser } from "./pointsService";
 
 interface WeekData {
@@ -109,18 +109,21 @@ export const getWeekendMessage = (): string => {
 };
 
 // Generate random Edge message and return the supply as well
-export const generateEdgeMessage = (): { message: string; supply: string } => {
+export const generateEdgeMessage = (): { message: string; supply: Material } => {
   const randomDays = Math.floor(Math.random() * 7) + 1; // 1-7 days
 
   // Get a random material from the list
   const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
-  const sourceList = stored ? JSON.parse(stored) : [...MATERIALS_LIST];
+  const sourceList: Material[] = stored
+    ? JSON.parse(stored)
+    : MATERIALS_LIST.map(name => ({ name }));
+
   const randomMaterial = sourceList.length > 0
     ? sourceList[Math.floor(Math.random() * sourceList.length)]
-    : 'special supply';
+    : { name: 'special supply' };
 
   return {
-    message: `Edge ${randomDays} days and when you come back release the load with ${randomMaterial} 🥴`,
+    message: `Edge ${randomDays} days and when you come back release the load with ${randomMaterial.name} 🥴`,
     supply: randomMaterial
   };
 };
@@ -163,12 +166,14 @@ export const checkMultiple = (): string => {
   return result;
 };
 
-export const getMaterials = (num: number): string[] => {
-  const selected: string[] = [];
+export const getMaterials = (num: number): Material[] => {
+  const selected: Material[] = [];
 
   // Try to load from dynamic registry first
   const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
-  const sourceList = stored ? JSON.parse(stored) : [...MATERIALS_LIST];
+  const sourceList: Material[] = stored
+    ? JSON.parse(stored)
+    : MATERIALS_LIST.map(name => ({ name }));
 
   for (let i = 0; i < num; i++) {
     if (sourceList.length === 0) break;

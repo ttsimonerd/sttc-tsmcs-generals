@@ -1,4 +1,5 @@
 // Points Service - Manages user points and item effects
+import { ItemAction, ShopItem } from '../types';
 
 // Current user tracking
 const CURRENT_USER_KEY = 'current-user';
@@ -64,16 +65,8 @@ export const DEFAULT_VIP_CHOICE: ShopItem = {
   price: 120,
   icon: '👑',
   stock: -1,
+  action: ItemAction.NONE,
 };
-
-export interface ShopItem {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  icon: string;
-  stock: number; // -1 for unlimited
-}
 
 export type PunishmentDifficulty = 'easy' | 'medium' | 'hard' | 'extreme' | 'free';
 
@@ -103,11 +96,11 @@ export const DIFFICULTY_COLORS: Record<PunishmentDifficulty, string> = {
 
 // Default shop items
 const DEFAULT_SHOP_ITEMS: ShopItem[] = [
-  { id: '1', name: 'Extra Roll', description: 'Get one extra roll today', price: 50, icon: '🎲', stock: -1 },
-  { id: '2', name: 'Skip Punishment', description: 'Avoid one punishment', price: 100, icon: '🛡️', stock: -1 },
-  { id: '3', name: 'Double Points', description: 'Double points for 1 hour', price: 200, icon: '✨', stock: -1 },
-  { id: '4', name: 'Mystery Box', description: 'Random reward inside', price: 75, icon: '📦', stock: 10 },
-  { id: '5', name: 'VIP Badge', description: 'Show off your status', price: 500, icon: '👑', stock: 5 },
+  { id: '1', name: 'Extra Roll', description: 'Get one extra roll today', price: 50, icon: '🎲', stock: -1, action: ItemAction.GIVE_EXTRA_ROLL, actionValue: 1 },
+  { id: '2', name: 'Skip Punishment', description: 'Avoid one punishment', price: 100, icon: '🛡️', stock: -1, action: ItemAction.GIVE_SKIP_PUNISHMENT, actionValue: 1 },
+  { id: '3', name: 'Double Points', description: 'Double points for 1 hour', price: 200, icon: '✨', stock: -1, action: ItemAction.DOUBLE_POINTS_BUFF, actionValue: 3600 },
+  { id: '4', name: 'Mystery Box', description: 'Random reward inside', price: 75, icon: '📦', stock: 10, action: ItemAction.RANDOM_POINTS_BOX },
+  { id: '5', name: 'VIP Badge', description: 'Show off your status', price: 500, icon: '👑', stock: 5, action: ItemAction.GRANT_VIP },
 ];
 
 // Default punishment options with difficulty
@@ -296,6 +289,42 @@ export const getInventoryCount = (itemId: string): number => {
 // Check if user has item in inventory
 export const hasItem = (itemId: string): boolean => {
   return getInventoryCount(itemId) > 0;
+};
+
+// Actions processing system
+export const processItemAction = (action?: ItemAction, value: number = 0): { success: boolean; message: string } => {
+  if (!action || action === ItemAction.NONE) return { success: true, message: '' };
+
+  switch (action) {
+    case ItemAction.GIVE_POINTS:
+      addPoints(value);
+      return { success: true, message: `Acquired ${value} points!` };
+
+    case ItemAction.GIVE_EXTRA_ROLL:
+      addToInventory(ITEM_IDS.EXTRA_ROLL, value || 1);
+      return { success: true, message: `Added ${value || 1} Extra Roll(s) to inventory!` };
+
+    case ItemAction.GIVE_SKIP_PUNISHMENT:
+      addToInventory(ITEM_IDS.SKIP_PUNISHMENT, value || 1);
+      return { success: true, message: `Added ${value || 1} Skip Punishment(s) to inventory!` };
+
+    case ItemAction.DOUBLE_POINTS_BUFF:
+      activateDoublePoints();
+      return { success: true, message: 'Double Points activated for 1 hour!' };
+
+    case ItemAction.RANDOM_POINTS_BOX:
+      const reward = openMysteryBox();
+      addPoints(reward);
+      return { success: true, message: `Opened mystery box and found ${reward} points!` };
+
+    case ItemAction.GRANT_VIP:
+      if (hasVipBadge()) return { success: false, message: 'You already own the VIP Badge!' };
+      grantVipBadge();
+      return { success: true, message: "VIP Badge acquired! You're now a VIP!" };
+
+    default:
+      return { success: false, message: 'Unknown action type.' };
+  }
 };
 
 // ==========================================

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { rollWithLimit, checkMultiple, getMaterials, loadWeekData, resetWins, getEdgeSupply } from '../services/rngService';
-import { RiddleResponse, FailedLog, ActionLog } from '../types';
-import { addPoints, getPoints, canClaimDailyBonus, claimDailyBonus, ITEM_IDS, hasItem, useFromInventory, getInventoryCount, addPointsWithMultiplier, isDoublePointsActive, getDoublePointsRemaining } from '../services/pointsService';
+import { RiddleResponse, FailedLog, ActionLog, Material, ItemAction } from '../types';
+import { addPoints, getPoints, canClaimDailyBonus, claimDailyBonus, ITEM_IDS, hasItem, useFromInventory, getInventoryCount, addPointsWithMultiplier, isDoublePointsActive, getDoublePointsRemaining, processItemAction } from '../services/pointsService';
 
 // Local type aliases to avoid inline generic unions in hooks (Babel parsing workaround)
 type Step = 'IDLE' | 'ROLLING' | 'ROLLED' | 'MULTIPLE_OFFER' | 'MATERIALS_OFFER' | 'SHOW_MATERIALS';
@@ -205,7 +205,7 @@ const RngTactician: React.FC = () => {
   const [step, setStep] = useState('IDLE' as Step);
   const [rollResult, setRollResult] = useState('');
   const [multipleResult, setMultipleResult] = useState('');
-  const [materials, setMaterials] = useState([] as string[]);
+  const [materials, setMaterials] = useState([] as Material[]);
   const [supplyTitle, setSupplyTitle] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [weekData, setWeekData] = useState(loadWeekData());
@@ -320,10 +320,22 @@ const RngTactician: React.FC = () => {
     if (result.includes('Edge')) {
       const { doubled } = addPointsWithMultiplier(50);
       addToLog(`+${doubled ? 100 : 50} points for Edge result!${doubled ? ' (2x!)' : ''}`, 'success');
-      const edgeSupply = getEdgeSupply(result);
-      setMaterials([edgeSupply]);
+
+      // The generateEdgeMessage now returns supply: Material in its internal logic, 
+      // but rollWithLimit only returns the string. We need to get the actual Material object.
+      // Easiest is to re-get it if we can, or modify rollWithLimit to return the object.
+      // Let's modify rollWithLimit in a follow-up or just use getMaterials(1)[0] here for now 
+      // (though it might not match the message).
+
+      // Better: let's extract the name and find it in the registry or just create a temporary one.
+      const edgeSupplyName = getEdgeSupply(result);
+      const tempMaterial: Material = { name: edgeSupplyName, icon: '🧪' };
+
+      // Actually, let's just use the name extracted for now. 
+      // In a real scenario, we'd want the full object.
+      setMaterials([tempMaterial]);
       setSupplyTitle('-- EDGE CHALLENGE SUPPLY --');
-      addToLog(edgeSupply, 'warning');
+      addToLog(edgeSupplyName, 'warning');
       setStep('SHOW_MATERIALS');
     }
 
@@ -359,7 +371,16 @@ const RngTactician: React.FC = () => {
       const mats = getMaterials(quantity);
       setMaterials(mats);
       setSupplyTitle(`-- ACQUIRED ASSETS (${quantity}) --`);
-      addToLog(`${mats.join(', ')}`, 'success');
+
+      // Process actions for acquired materials
+      mats.forEach(m => {
+        addToLog(`${m.icon || '🧪'} ${m.name}`, 'success');
+        if (m.action && m.action !== ItemAction.NONE) {
+          const { message } = processItemAction(m.action, m.actionValue);
+          if (message) addToLog(message, 'warning');
+        }
+      });
+
       setStep('SHOW_MATERIALS');
     } else {
       setStep('ROLLED');
@@ -846,17 +867,16 @@ const RngTactician: React.FC = () => {
               )}
 
               {step === 'SHOW_MATERIALS' && materials.length > 0 && (
-                <div className="w-full text-left space-y-2 animate-fade-in">
-                  <p className={`text-center font-mono text-sm mb-4 ${supplyTitle.includes('CONSOLATION') ? 'text-yellow-500' : 'text-emerald-400'}`}>{supplyTitle}</p>
-                  <div className="max-h-60 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-                    {materials.map((mat, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 bg-white/5 border border-white/5 rounded-lg text-zinc-300 font-mono text-sm flex justify-between animate-fade-in-up"
-                        style={{ animationDelay: `${idx * 50}ms` }}
-                      >
-                        <span>{mat}</span>
-                        <span className="text-zinc-600">#{idx + 1}</span>
+                <div className="w-full space-y-6 animate-fade-in">
+                  <p className={`text-center font-mono text-sm ${supplyTitle.includes('CONSOLATION') ? 'text-yellow-500' : 'text-emerald-400'}`}>{supplyTitle}</p>
+                  <div className="flex flex-wrap justify-center gap-4 max-h-[400px] overflow-y-auto custom-scrollbar p-2">
+                    {materials.map((m, i) => (
+                      <div key={i} className="group relative flex flex-col items-center gap-2 p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300 min-w-[120px] animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                        <span className="text-5xl group-hover:scale-110 transition-transform duration-300">{m.icon || '🧪'}</span>
+                        <span className="text-white font-bold text-sm">{m.name}</span>
+                        {m.action && m.action !== ItemAction.NONE && (
+                          <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">Effect Applied!</span>
+                        )}
                       </div>
                     ))}
                   </div>

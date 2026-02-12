@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { MATERIALS_LIST } from '../data/materials';
+import { Material, ItemAction } from '../types';
 
 const STORAGE_KEY = 'materials_registry_data';
 
 const MaterialRegistry: React.FC = () => {
-    const [materials, setMaterials] = useState<string[]>([]);
+    const [materials, setMaterials] = useState<Material[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [newMaterial, setNewMaterial] = useState('');
+    const [newMaterial, setNewMaterial] = useState({ name: '', icon: '🧪', action: ItemAction.NONE, actionValue: 0 });
     const [notification, setNotification] = useState<string | null>(null);
 
     useEffect(() => {
@@ -14,7 +15,7 @@ const MaterialRegistry: React.FC = () => {
         if (stored) {
             setMaterials(JSON.parse(stored));
         } else {
-            setMaterials([...MATERIALS_LIST]);
+            setMaterials(MATERIALS_LIST.map(name => ({ name, icon: '🧪', action: ItemAction.NONE, actionValue: 0 })));
         }
     }, []);
 
@@ -23,26 +24,26 @@ const MaterialRegistry: React.FC = () => {
         setTimeout(() => setNotification(null), 3000);
     };
 
-    const handleSave = (updatedList: string[]) => {
+    const handleSave = (updatedList: Material[]) => {
         setMaterials(updatedList);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
     };
 
     const handleAdd = () => {
-        if (!newMaterial.trim()) return;
-        if (materials.includes(newMaterial.trim())) {
+        if (!newMaterial.name.trim()) return;
+        if (materials.some(m => m.name.toLowerCase() === newMaterial.name.trim().toLowerCase())) {
             showNotif('Material already exists!');
             return;
         }
-        const updated = [newMaterial.trim(), ...materials];
+        const updated = [{ ...newMaterial, name: newMaterial.name.trim() }, ...materials];
         handleSave(updated);
-        setNewMaterial('');
+        setNewMaterial({ name: '', icon: '🧪', action: ItemAction.NONE, actionValue: 0 });
         showNotif('Material added! 🧪');
     };
 
-    const handleDelete = (material: string) => {
-        if (confirm(`Remove "${material}" from the drop pool?`)) {
-            const updated = materials.filter(m => m !== material);
+    const handleDelete = (name: string) => {
+        if (confirm(`Remove "${name}" from the drop pool?`)) {
+            const updated = materials.filter(m => m.name !== name);
             handleSave(updated);
             showNotif('Material removed.');
         }
@@ -50,13 +51,13 @@ const MaterialRegistry: React.FC = () => {
 
     const handleReset = () => {
         if (confirm('Reset material pool to the authentic default list?')) {
-            handleSave([...MATERIALS_LIST]);
+            handleSave(MATERIALS_LIST.map(name => ({ name, icon: '🧪', action: ItemAction.NONE, actionValue: 0 })));
             showNotif('Pool reset to defaults.');
         }
     };
 
     const filteredMaterials = materials.filter(m =>
-        m.toLowerCase().includes(searchTerm.toLowerCase())
+        m.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -64,7 +65,7 @@ const MaterialRegistry: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold text-white">Material Registry</h1>
-                    <p className="text-zinc-500 text-sm mt-1">Manage the Arbiter's drop pool for Edge & Rewards</p>
+                    <p className="text-zinc-500 text-sm mt-1">Manage the Arbiter's drop pool with functional actions</p>
                 </div>
                 <div className="flex gap-2">
                     {notification && (
@@ -86,19 +87,57 @@ const MaterialRegistry: React.FC = () => {
                 <div className="md:col-span-1 space-y-6">
                     <div className="glass-panel p-6 rounded-2xl border border-emerald-500/30 space-y-4">
                         <h2 className="text-sm font-bold text-emerald-400 uppercase tracking-widest">Add New Material</h2>
-                        <div className="space-y-3">
-                            <input
-                                type="text"
-                                value={newMaterial}
-                                onChange={(e) => setNewMaterial(e.target.value)}
-                                placeholder="Enter supply name..."
-                                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                            />
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Name</label>
+                                <input
+                                    type="text"
+                                    value={newMaterial.name}
+                                    onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
+                                    placeholder="Enter supply name..."
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Icon</label>
+                                    <input
+                                        type="text"
+                                        value={newMaterial.icon}
+                                        onChange={(e) => setNewMaterial({ ...newMaterial, icon: e.target.value })}
+                                        placeholder="🧪"
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Action Value</label>
+                                    <input
+                                        type="number"
+                                        value={newMaterial.actionValue}
+                                        onChange={(e) => setNewMaterial({ ...newMaterial, actionValue: parseInt(e.target.value) || 0 })}
+                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-1">
+                                <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Assigned Action</label>
+                                <select
+                                    value={newMaterial.action}
+                                    onChange={(e) => setNewMaterial({ ...newMaterial, action: e.target.value as ItemAction })}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none"
+                                >
+                                    {Object.values(ItemAction).map(action => (
+                                        <option key={action} value={action} className="bg-zinc-900">{action.replace(/_/g, ' ')}</option>
+                                    ))}
+                                </select>
+                            </div>
+
                             <button
                                 onClick={handleAdd}
-                                disabled={!newMaterial.trim()}
-                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50"
+                                disabled={!newMaterial.name.trim()}
+                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50 mt-2"
                             >
                                 + ADD TO DROP POOL
                             </button>
@@ -130,7 +169,7 @@ const MaterialRegistry: React.FC = () => {
                         </svg>
                         <input
                             type="text"
-                            placeholder="Search registry..."
+                            placeholder="Search materials..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500/50 transition-all font-mono text-sm"
@@ -142,26 +181,35 @@ const MaterialRegistry: React.FC = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead className="sticky top-0 bg-zinc-900 z-10">
                                     <tr className="border-b border-white/10">
-                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">#</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Icon</th>
                                         <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Material Name</th>
+                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Action</th>
                                         <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {filteredMaterials.length === 0 ? (
                                         <tr>
-                                            <td colSpan={3} className="px-6 py-12 text-center text-zinc-500 italic">
+                                            <td colSpan={4} className="px-6 py-12 text-center text-zinc-500 italic">
                                                 No materials found matching your search.
                                             </td>
                                         </tr>
                                     ) : (
-                                        filteredMaterials.map((m, i) => (
-                                            <tr key={m} className={`hover:bg-white/5 transition-colors group ${searchTerm && m.toLowerCase().includes(searchTerm.toLowerCase()) ? 'bg-emerald-500/5' : ''}`}>
-                                                <td className="px-6 py-4 text-zinc-600 font-mono text-xs">{materials.indexOf(m) + 1}</td>
-                                                <td className="px-6 py-4 text-white font-medium">{m}</td>
+                                        filteredMaterials.map((m) => (
+                                            <tr key={m.name} className={`hover:bg-white/5 transition-colors group ${searchTerm && m.name.toLowerCase().includes(searchTerm.toLowerCase()) ? 'bg-emerald-500/5' : ''}`}>
+                                                <td className="px-6 py-4 text-xl">{m.icon || '🧪'}</td>
+                                                <td className="px-6 py-4 text-white font-medium">{m.name}</td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`text-[10px] px-2 py-1 rounded-full border ${m.action && m.action !== ItemAction.NONE
+                                                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                                                            : 'bg-zinc-500/10 border-zinc-500/30 text-zinc-500'
+                                                        }`}>
+                                                        {m.action ? m.action.replace(/_/g, ' ') : 'NONE'} {m.actionValue ? `(${m.actionValue})` : ''}
+                                                    </span>
+                                                </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button
-                                                        onClick={() => handleDelete(m)}
+                                                        onClick={() => handleDelete(m.name)}
                                                         className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
                                                         title="Delete Material"
                                                     >
