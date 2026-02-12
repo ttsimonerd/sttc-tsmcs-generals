@@ -440,10 +440,19 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
     const availableRiddles = riddles.filter((r) => !storedFailed.includes(r.question));
 
     // Select random riddle
-    const randomRiddle =
-      availableRiddles.length > 0
-        ? availableRiddles[Math.floor(Math.random() * availableRiddles.length)]
-        : riddles[Math.floor(Math.random() * riddles.length)];
+    let randomRiddle;
+
+    if (availableRiddles.length > 0) {
+      randomRiddle = availableRiddles[Math.floor(Math.random() * availableRiddles.length)];
+    } else if (riddles.length > 0) {
+      // Reset failed if all riddles used (or just pick random from full list)
+      // Let's reset the failed list to allow retries
+      localStorage.removeItem('redeemer_failed_questions');
+      randomRiddle = riddles[Math.floor(Math.random() * riddles.length)];
+    } else {
+      // Emergency fallback
+      randomRiddle = { question: "Error: No riddles found.", answer: "Error" };
+    }
 
     setCurrentRiddle(randomRiddle);
     setRedeemerOpen(true);

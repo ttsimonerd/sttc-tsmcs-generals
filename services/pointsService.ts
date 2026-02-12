@@ -283,7 +283,7 @@ export const hasItem = (itemId: string): boolean => {
 };
 
 // Actions processing system
-export const processItemAction = (action?: ItemAction, value: number = 0): { success: boolean; message: string } => {
+export const processItemAction = (action?: ItemAction | string, value: number = 0): { success: boolean; message: string } => {
   if (!action || action === ItemAction.NONE) return { success: true, message: '' };
 
   switch (action) {
@@ -300,8 +300,22 @@ export const processItemAction = (action?: ItemAction, value: number = 0): { suc
       return { success: true, message: `Added ${value || 1} Skip Punishment(s) to inventory!` };
 
     case ItemAction.DOUBLE_POINTS_BUFF:
+    case 'DOUBLE_POINTS': // Legacy support
       activateDoublePoints();
       return { success: true, message: 'Double Points activated for 1 hour!' };
+
+    case ItemAction.GIVE_EXTRA_ROLL:
+    case 'EXTRA_ROLL': // Legacy support
+      addToInventory(ITEM_IDS.EXTRA_ROLL, value || 1);
+      return { success: true, message: `Added ${value || 1} Extra Roll(s) to inventory!` };
+
+    case ItemAction.GIVE_SKIP_PUNISHMENT:
+    case 'SKIP_PUNISHMENT': // Legacy support
+      addToInventory(ITEM_IDS.SKIP_PUNISHMENT, value || 1);
+      return { success: true, message: `Added ${value || 1} Skip Punishment(s) to inventory!` };
+
+    case ItemAction.GRANT_VIP:
+    case 'GRANT_VIP': // Legacy support
 
     case ItemAction.RANDOM_POINTS_BOX:
       const reward = openMysteryBox();
@@ -403,3 +417,4 @@ export const addPointsWithMultiplier = (amount: number): { total: number; double
   const newTotal = addPoints(finalAmount);
   return { total: newTotal, doubled };
 };
+
