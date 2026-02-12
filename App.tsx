@@ -108,7 +108,10 @@ const App: React.FC = () => {
         return <PunishmentWheel
           isOwner={userRole === 'Owner'}
           forcedSupply={punishmentRedirection?.active ? punishmentRedirection.supply : undefined}
-          onComplete={() => setPunishmentRedirection(null)}
+          onComplete={() => {
+            setPunishmentRedirection(null);
+            setCurrentView(AppView.RNG_TACTICIAN);
+          }}
         />;
       case AppView.SHOP:
         return <Shop isOwner={userRole === 'Owner'} />;
