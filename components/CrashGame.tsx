@@ -4,7 +4,10 @@ import confetti from 'canvas-confetti';
 
 type GameState = 'IDLE' | 'RISING' | 'CASHED_OUT' | 'CRASHED';
 
+import { getTunerConfig } from '../services/gameTunerService';
+
 const CrashGame: React.FC = () => {
+  const [config] = useState(getTunerConfig().crash);
   const [gameState, setGameState] = useState<GameState>('IDLE');
   const [multiplier, setMultiplier] = useState(1.00);
   const [betAmount, setBetAmount] = useState(10);
@@ -22,27 +25,15 @@ const CrashGame: React.FC = () => {
   const generateCrashPoint = useCallback(() => {
     const roll = Math.random();
     let cumulative = 0;
-    const distribution = [
-      { value: 1.01, prob: 0.05 },
-      { value: 1.10, prob: 0.08 },
-      { value: 1.50, prob: 0.12 },
-      { value: 2.00, prob: 0.15 },
-      { value: 3.00, prob: 0.20 },
-      { value: 5.00, prob: 0.15 },
-      { value: 10.00, prob: 0.10 },
-      { value: 20.00, prob: 0.08 },
-      { value: 50.00, prob: 0.05 },
-      { value: 100.00, prob: 0.02 },
-    ];
 
-    for (const { value, prob } of distribution) {
+    for (const { value, prob } of config.distribution) {
       cumulative += prob;
       if (roll < cumulative) {
         return value;
       }
     }
     return 2.00;
-  }, []);
+  }, [config]);
 
   const startGame = () => {
     if (betAmount > points) return;
@@ -140,11 +131,10 @@ const CrashGame: React.FC = () => {
           {history.slice(0, 5).map((crash, i) => (
             <span
               key={i}
-              className={`text-xs px-2 py-1 rounded ${
-                crash < 2 ? 'bg-red-500/20 text-red-400' :
-                crash < 5 ? 'bg-yellow-500/20 text-yellow-400' :
-                'bg-green-500/20 text-green-400'
-              }`}
+              className={`text-xs px-2 py-1 rounded ${crash < 2 ? 'bg-red-500/20 text-red-400' :
+                  crash < 5 ? 'bg-yellow-500/20 text-yellow-400' :
+                    'bg-green-500/20 text-green-400'
+                }`}
             >
               {crash.toFixed(2)}x
             </span>
@@ -171,11 +161,10 @@ const CrashGame: React.FC = () => {
 
         <div className="h-4 bg-zinc-800 rounded-full overflow-hidden">
           <div
-            className={`absolute left-0 top-0 h-full transition-all duration-75 rounded-full ${
-              multiplier < 2 ? 'bg-zinc-500' :
-              multiplier < 5 ? 'bg-emerald-500' :
-              'bg-gradient-to-r from-yellow-500 to-red-500'
-            }`}
+            className={`absolute left-0 top-0 h-full transition-all duration-75 rounded-full ${multiplier < 2 ? 'bg-zinc-500' :
+                multiplier < 5 ? 'bg-emerald-500' :
+                  'bg-gradient-to-r from-yellow-500 to-red-500'
+              }`}
             style={{ width: `${Math.min(100, (multiplier / 10) * 100)}%` }}
           />
         </div>
@@ -207,11 +196,10 @@ const CrashGame: React.FC = () => {
                   key={amount}
                   onClick={() => setBetAmount(Math.min(points, amount))}
                   disabled={points < amount}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    betAmount === amount
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${betAmount === amount
                       ? 'bg-emerald-500 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                  } disabled:opacity-50`}
+                    } disabled:opacity-50`}
                 >
                   {amount}
                 </button>
@@ -256,12 +244,11 @@ const CrashGame: React.FC = () => {
             history.map((crash, i) => (
               <span
                 key={i}
-                className={`px-3 py-1.5 rounded-lg text-sm font-bold ${
-                  crash < 2 ? 'bg-red-500/20 text-red-400' :
-                  crash < 5 ? 'bg-yellow-500/20 text-yellow-400' :
-                  crash < 10 ? 'bg-green-500/20 text-green-400' :
-                  'bg-purple-500/20 text-purple-400'
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-bold ${crash < 2 ? 'bg-red-500/20 text-red-400' :
+                    crash < 5 ? 'bg-yellow-500/20 text-yellow-400' :
+                      crash < 10 ? 'bg-green-500/20 text-green-400' :
+                        'bg-purple-500/20 text-purple-400'
+                  }`}
               >
                 {crash.toFixed(2)}x
               </span>

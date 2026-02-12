@@ -11,13 +11,11 @@ interface Cell {
   adjacentMines: number;
 }
 
-const DIFFICULTY_SETTINGS = {
-  EASY: { gridSize: 5, mineCount: 3, points: 5 },
-  MEDIUM: { gridSize: 7, mineCount: 5, points: 15 },
-  HARD: { gridSize: 10, mineCount: 8, points: 30 },
-};
+import { getTunerConfig } from '../services/gameTunerService';
 
 const Minesweeper: React.FC = () => {
+  const [config] = useState(getTunerConfig().minesweeper);
+
   const [difficulty, setDifficulty] = useState<Difficulty>('EASY');
   const [grid, setGrid] = useState<Cell[][]>([]);
   const [gameOver, setGameOver] = useState<'IDLE' | 'PLAYING' | 'WON' | 'LOST'>('IDLE');
@@ -26,8 +24,8 @@ const Minesweeper: React.FC = () => {
   const [flagMode, setFlagMode] = useState(false);
   const [wonPoints, setWonPoints] = useState(0);
   const [wasDoubled, setWasDoubled] = useState(false);
-  
-  const currentSettings = DIFFICULTY_SETTINGS[difficulty];
+
+  const currentSettings = config[difficulty];
 
   const initializeGrid = useCallback(() => {
     const { gridSize, mineCount } = currentSettings;
@@ -153,7 +151,7 @@ const Minesweeper: React.FC = () => {
 
   const handleCellClick = (row: number, col: number) => {
     if (flagMode) {
-      toggleFlag(row, col, { preventDefault: () => {} } as React.MouseEvent);
+      toggleFlag(row, col, { preventDefault: () => { } } as React.MouseEvent);
     } else {
       revealCell(row, col);
     }
@@ -214,32 +212,30 @@ const Minesweeper: React.FC = () => {
             disabled={gameOver === 'PLAYING'}
             className="bg-zinc-800 border border-zinc-600 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
           >
-            <option value="EASY">Easy (+{DIFFICULTY_SETTINGS.EASY.points} pts)</option>
-            <option value="MEDIUM">Medium (+{DIFFICULTY_SETTINGS.MEDIUM.points} pts)</option>
-            <option value="HARD">Hard (+{DIFFICULTY_SETTINGS.HARD.points} pts)</option>
+            <option value="EASY">Easy (+{config.EASY.points} pts)</option>
+            <option value="MEDIUM">Medium (+{config.MEDIUM.points} pts)</option>
+            <option value="HARD">Hard (+{config.HARD.points} pts)</option>
           </select>
         </div>
 
         <button
           onClick={() => setFlagMode(!flagMode)}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-            flagMode
-              ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-              : 'bg-zinc-800 text-zinc-400 border border-zinc-600'
-          }`}
+          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${flagMode
+            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+            : 'bg-zinc-800 text-zinc-400 border border-zinc-600'
+            }`}
         >
           🚩 Flag Mode: {flagMode ? 'ON' : 'OFF'}
         </button>
       </div>
 
       {gameOver !== 'PLAYING' && (
-        <div className={`p-6 rounded-xl text-center animate-fade-in ${
-          gameOver === 'WON'
-            ? 'bg-emerald-500/20 border border-emerald-500/30'
-            : gameOver === 'LOST'
+        <div className={`p-6 rounded-xl text-center animate-fade-in ${gameOver === 'WON'
+          ? 'bg-emerald-500/20 border border-emerald-500/30'
+          : gameOver === 'LOST'
             ? 'bg-red-500/20 border border-red-500/30'
             : 'bg-zinc-800/50 border border-white/5'
-        }`}>
+          }`}>
           {gameOver === 'WON' && (
             <>
               <p className="text-4xl mb-2 animate-bounce">🎉</p>

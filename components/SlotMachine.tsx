@@ -18,7 +18,10 @@ const SYMBOLS: SlotSymbol[] = [
   { emoji: '👑', name: 'Crown', multiplier: 20 },
 ];
 
+import { getTunerConfig } from '../services/gameTunerService';
+
 const SlotMachine: React.FC = () => {
+  const [config] = useState(getTunerConfig().slots);
   const [reels, setReels] = useState<SlotSymbol[]>([
     SYMBOLS[0],
     SYMBOLS[0],
@@ -38,29 +41,32 @@ const SlotMachine: React.FC = () => {
     setPoints(getPoints());
   }, []);
 
-  const getWeightedSymbol = useCallback((): SlotSymbol => {
-    const weights = [30, 25, 20, 15, 5, 3, 2];
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
+  const symbols = SYMBOLS.map((s, i) => ({
+    ...s,
+    multiplier: config.multipliers[i]
+  }));
+
+  const getWeightedSymbol = useCallback(() => {
+    const totalWeight = config.weights.reduce((a, b) => a + b, 0);
     let random = Math.random() * totalWeight;
 
-    for (let i = 0; i < weights.length; i++) {
-      random -= weights[i];
+    for (let i = 0; i < config.weights.length; i++) {
+      random -= config.weights[i];
       if (random <= 0) {
-        return SYMBOLS[i];
+        return symbols[i];
       }
     }
-    return SYMBOLS[0];
-  }, []);
+    return symbols[0];
+  }, [config, symbols]);
 
   const spin = () => {
-    if (isSpinning) return;
-
+    // ...
     if (freeSpins > 0) {
       setFreeSpins(prev => prev - 1);
-    } else if (points < 5) {
+    } else if (points < config.spinCost) {
       return;
     } else {
-      const newPoints = getPoints() - 5;
+      const newPoints = getPoints() - config.spinCost;
       setPoints(newPoints);
     }
 
