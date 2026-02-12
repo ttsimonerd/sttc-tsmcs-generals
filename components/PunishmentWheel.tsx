@@ -120,8 +120,11 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Punishment Wheel</h1>
           <p className="text-zinc-500 text-sm mt-1">Spin to receive your fate</p>
+          {forcedSupply && (
+            <p className="text-red-400 text-xs mt-1 font-mono">⚠️ Forced redirection - Lost supply: <span className="font-bold">{forcedSupply}</span></p>
+          )}
         </div>
-        {isOwner && (
+        {isOwner && !forcedSupply && (
           <button
             onClick={() => setEditMode(!editMode)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
@@ -202,6 +205,19 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Forced Mode Warning Banner */}
+      {forcedSupply && !result && (
+        <div className="glass-panel p-6 rounded-2xl border border-red-500/50 bg-red-500/10 animate-pulse">
+          <div className="flex items-center gap-4">
+            <span className="text-4xl">💀</span>
+            <div>
+              <h3 className="text-red-400 font-bold text-lg">MANDATORY PUNISHMENT</h3>
+              <p className="text-zinc-400 text-sm">You must spin the wheel to continue. Lost supply: <span className="text-red-300 font-bold">{forcedSupply}</span></p>
+            </div>
           </div>
         </div>
       )}
@@ -346,7 +362,8 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
               setSkipped(false);
               if (onComplete) onComplete();
             }}
-            className="text-zinc-500 hover:text-white text-sm underline underline-offset-4 transition-colors"
+            disabled={forcedSupply && !result}
+            className="text-zinc-500 hover:text-white text-sm underline underline-offset-4 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {forcedSupply ? 'Complete Punishment' : 'Clear result'}
           </button>
