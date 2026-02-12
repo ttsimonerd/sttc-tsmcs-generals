@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+/* Theme CSS Variables */
+
+:root {
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+  --color-accent: #06b6d4;
+  --color-primary-rgb: 16, 185, 129;
+  --color-accent-rgb: 6, 182, 212;
+}
+
+/* Theme-aware utility classes using CSS variables */
+.text-theme-primary { 
+  color: var(--color-primary) !important; 
+}
+.text-theme-primary-hover { 
+  color: var(--color-primary-hover) !important; 
+}
+.text-theme-accent { 
+  color: var(--color-accent) !important; 
+}
+.bg-theme-primary { 
+  background-color: var(--color-primary) !important; 
+}
+.bg-theme-accent { 
+  background-color: var(--color-accent) !important; 
+}
+.border-theme-primary { 
+  border-color: var(--color-primary) !important; 
+}
+.border-theme-accent { 
+  border-color: var(--color-accent) !important; 
+}
+
+.bg-theme-primary-soft { 
+  background-color: rgba(var(--color-primary-rgb), 0.2) !important; 
+}
+.bg-theme-primary-hover-soft { 
+  background-color: rgba(var(--color-primary-rgb), 0.3) !important; 
+}
+.border-theme-primary-soft { 
+  border-color: rgba(var(--color-primary-rgb), 0.3) !important; 
+}
+.shadow-theme-primary { 
+  box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3) !important; 
+}
+
+/* Gradient classes */
+.gradient-theme {
+  background: linear-gradient(to right, var(--color-primary), var(--color-accent)) !important;
+}
+.gradient-theme-text {
+  background: linear-gradient(to right, var(--color-primary), var(--color-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Panel styles */
+.glass-panel {
+    background: rgba(24, 24, 27, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Animations */
+.fade-in { animation: fadeIn 0.5s ease-out forwards; }
+.fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+@keyframes popIn {
+    0% { transform: scale(0.8); opacity: 0; filter: blur(10px); }
+    60% { transform: scale(1.1); opacity: 1; filter: blur(0px); }
+    100% { transform: scale(1); }
+}
+.animate-pop-in { animation: popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+.animate-shake { animation: shake 0.5s ease-in-out; }
+
+.noise-bg {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+}
+
+/* Scrollbar styles */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* Scrollbar for entire page */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #18181b; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
