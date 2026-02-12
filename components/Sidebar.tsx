@@ -1,16 +1,21 @@
 import React from 'react';
-import { AppView } from '../types';
+import { AppView, UserRole } from '../types';
 
 interface SidebarProps {
   currentView: AppView;
   onViewChange: (view: AppView) => void;
   isOwner?: boolean;
+  userRole?: UserRole;
+  hasVipBadge?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, userRole, hasVipBadge }) => {
   const navItems = [
     { id: AppView.RNG_TACTICIAN, label: 'The Arbiter', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: AppView.MINI_GAMES, label: 'Mini Games', icon: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: AppView.CRASH_GAME, label: 'Crash Game', icon: 'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6' },
+    { id: AppView.MINESWEEPER, label: 'Minesweeper', icon: 'M9 9h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { id: AppView.SLOT_MACHINE, label: 'Slots', icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
     { id: AppView.PUNISHMENT_WHEEL, label: 'Punishment', icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
     { id: AppView.SHOP, label: 'Shop', icon: 'M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z' },
   ];
@@ -39,8 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner })
             key={item.id}
             onClick={() => onViewChange(item.id)}
             className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group
-              ${currentView === item.id
-                ? 'bg-theme-primary-soft text-white border-theme-primary-soft border shadow-theme-primary'
+              ${currentView === item.id 
+                ? 'bg-theme-primary-soft text-white border-theme-primary-soft border shadow-theme-primary' 
                 : 'text-zinc-400 hover:bg-white/5 hover:text-white'
               }`}
           >
@@ -51,14 +56,26 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner })
           </button>
         ))}
       </nav>
-
-      <div className="p-6 hidden md:block text-xs text-zinc-600">
-        <p>Gemini Powered</p>
-        <p>v1.5.0</p>
+      
+      <div className="p-6 hidden md:block space-y-3">
+        {/* User Role with VIP Badge */}
+        {userRole && (
+          <div className="flex items-center gap-2">
+            {hasVipBadge && (
+              <span className="text-amber-400 animate-pulse" title="VIP Member">👑</span>
+            )}
+            <span className={`text-sm font-medium ${hasVipBadge ? 'text-amber-400' : 'text-zinc-400'}`}>
+              {userRole}
+            </span>
+          </div>
+        )}
+        <div className="text-xs text-zinc-600">
+          <p>Beta</p>
+          <p>v1.5.0</p>
+        </div>
       </div>
     </aside>
   );
 };
 
 export default Sidebar;
-

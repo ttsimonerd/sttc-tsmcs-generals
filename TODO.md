@@ -1,57 +1,29 @@
-# ✅ COMPLETED - Fix VIP Choice and Theme
+# Fix VIP Choice and Theme
 
-## Issues Fixed:
+## Issues to Fix:
+1. **Theme not applying** - Need to properly inject CSS variables that override Tailwind classes
+2. **VIP Choice gives wrong reward** - Should give premium supplies (random materials), not riddles
 
-### ✅ Fix 1: Theme Application - COMPLETED
-- CSS variables are properly set on `:root` element
-- ThemeCustomizer.tsx saves to localStorage and applies immediately
-- App.tsx loads saved theme on mount
-- CSS utility classes using CSS variables work properly
+## Plan:
 
-### ✅ Fix 2: VIP Choice → Premium Supplies - COMPLETED
-- Renamed VIP Riddles to "VIP Supplies"
-- Created VipSupplies.tsx component for Owner to manage premium supplies list
-- VIP Choice in Shop now gives 3 random premium supplies instead of riddles
-- Updated types.ts: `VIP_RIDDLES` → `VIP_SUPPLIES`
-- Updated App.tsx: Uses VipSupplies component
-- Updated Sidebar.tsx: Label changed to "VIP Supplies"
-- Updated Shop.tsx: VIP Choice purchase gives supplies instead of riddles
-- pointsService.ts: Already has VIP supplies functions
+### Fix 1: Theme Application
+- Add CSS custom properties that Tailwind can use
+- Modify index.css to define CSS variables
+- Components should use CSS variables instead of hardcoded colors
 
-## Summary of Changes:
+### Fix 2: VIP Choice → Premium Supplies
+- Rename VIP Riddles to "Premium Supplies" or "VIP Supplies"
+- Create list of premium/vip materials (special items)
+- Owner can edit the VIP supplies list
+- When purchasing VIP Choice, player gets random premium supply + bonus points
 
-1. **types.ts**: Renamed enum from VIP_RIDDLES to VIP_SUPPLIES
-2. **App.tsx**: Changed import from VipRiddles to VipSupplies, updated renderView
-3. **Sidebar.tsx**: Updated label from "VIP Riddles" to "VIP Supplies"
-4. **Shop.tsx**: VIP Choice now gives 3 random VIP supplies + shows them in modal
-5. **VipSupplies.tsx**: New component for managing premium supplies list (Owner only)
-6. **index.css**: Improved CSS variable definitions and utility classes
-
-## Files Modified:
-- `types.ts`
-- `App.tsx`
-- `Sidebar.tsx`
-- `Shop.tsx`
-- `VipSupplies.tsx` (new file, created)
-- `index.css`
-
-## How VIP Choice Works Now:
-1. Player purchases "VIP Choice" from shop (costs 120 pts)
-2. System randomly selects 3 premium supplies from the VIP supplies list
-3. Player sees a modal with their 3 rewards
-4. Owner can manage the VIP supplies list in the "VIP Supplies" section
-
-## Default VIP Supplies:
-- "Premium Select"
-- "Golden Collection"
-- "Exclusive Access"
-- "VIP Member Bundle"
-- "Platinum Tier"
-- "Elite Pass"
-- "Diamond Selection"
-- "Royal Treatment"
-- "VIP Exclusive"
-- "Top Tier Item"
-
-Owner can add/edit/delete supplies in the VIP Supplies panel.
+## Files to Modify:
+1. `index.css` - Add CSS variables for colors
+2. `App.tsx` - Remove theme logic (not needed if using CSS variables)
+3. `ThemeCustomizer.tsx` - Update to set CSS variables on :root
+4. `VipRiddles.tsx` - Rename to VipSupplies.tsx and change functionality
+5. `types.ts` - Update AppView enum name
+6. `Sidebar.tsx` - Update label
+7. `services/pointsService.ts` - Add VIP supplies storage functions
+8. `Shop.tsx` - VIP Choice gives supplies instead of riddles
 

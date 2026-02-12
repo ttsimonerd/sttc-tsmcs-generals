@@ -1,7 +1,4 @@
-@import "tailwindcss";
-
-/* Theme CSS Variables */
-
+/* Additional custom styles */
 :root {
   --color-primary: #10b981;
   --color-primary-hover: #059669;
@@ -10,45 +7,20 @@
   --color-accent-rgb: 6, 182, 212;
 }
 
-/* Theme-aware utility classes using CSS variables */
-.text-theme-primary { 
-  color: var(--color-primary) !important; 
-}
-.text-theme-primary-hover { 
-  color: var(--color-primary-hover) !important; 
-}
-.text-theme-accent { 
-  color: var(--color-accent) !important; 
-}
-.bg-theme-primary { 
-  background-color: var(--color-primary) !important; 
-}
-.bg-theme-accent { 
-  background-color: var(--color-accent) !important; 
-}
-.border-theme-primary { 
-  border-color: var(--color-primary) !important; 
-}
-.border-theme-accent { 
-  border-color: var(--color-accent) !important; 
-}
+/* Theme-aware utility classes */
+.text-theme-primary { color: var(--color-primary) !important; }
+.text-theme-accent { color: var(--color-accent) !important; }
+.bg-theme-primary { background-color: var(--color-primary) !important; }
+.bg-theme-accent { background-color: var(--color-accent) !important; }
+.border-theme-primary { border-color: var(--color-primary) !important; }
+.border-theme-accent { border-color: var(--color-accent) !important; }
 
-.bg-theme-primary-soft { 
-  background-color: rgba(var(--color-primary-rgb), 0.2) !important; 
-}
-.bg-theme-primary-hover-soft { 
-  background-color: rgba(var(--color-primary-rgb), 0.3) !important; 
-}
-.border-theme-primary-soft { 
-  border-color: rgba(var(--color-primary-rgb), 0.3) !important; 
-}
-.shadow-theme-primary { 
-  box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3) !important; 
-}
+.bg-theme-primary-soft { background-color: rgba(var(--color-primary-rgb), 0.2) !important; }
+.border-theme-primary-soft { border-color: rgba(var(--color-primary-rgb), 0.3) !important; }
+.shadow-theme-primary { box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3) !important; }
 
-/* Gradient classes */
-.gradient-theme {
-  background: linear-gradient(to right, var(--color-primary), var(--color-accent)) !important;
+.gradient-theme { 
+  background: linear-gradient(to right, var(--color-primary), var(--color-accent)) !important; 
 }
 .gradient-theme-text {
   background: linear-gradient(to right, var(--color-primary), var(--color-accent));
@@ -57,7 +29,6 @@
   background-clip: text;
 }
 
-/* Panel styles */
 .glass-panel {
     background: rgba(24, 24, 27, 0.6);
     backdrop-filter: blur(12px);
@@ -65,7 +36,6 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Animations */
 .fade-in { animation: fadeIn 0.5s ease-out forwards; }
 .fade-in-up { animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
@@ -90,7 +60,6 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
 }
 
-/* Scrollbar styles */
 .custom-scrollbar::-webkit-scrollbar { width: 6px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }

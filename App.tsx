@@ -8,41 +8,33 @@ import ThemeCustomizer from './components/ThemeCustomizer';
 import PunishmentWheel from './components/PunishmentWheel';
 import Shop from './components/Shop';
 import VipSupplies from './components/VipSupplies';
-import { AppView } from './types';
-import type { UserRole } from './types';
+import CrashGame from './components/CrashGame';
+import Minesweeper from './components/Minesweeper';
+import SlotMachine from './components/SlotMachine';
+import { AppView, UserRole } from './types';
+import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
-
-// Theme definitions
-const THEMES = [
-  { id: 'emerald', name: 'Emerald', primary: '#10b981', primaryHover: '#059669', accent: '#06b6d4' },
-  { id: 'purple', name: 'Purple', primary: '#8b5cf6', primaryHover: '#7c3aed', accent: '#a855f7' },
-  { id: 'rose', name: 'Rose', primary: '#f43f5e', primaryHover: '#e11d48', accent: '#ec4899' },
-  { id: 'amber', name: 'Amber', primary: '#f59e0b', primaryHover: '#d97706', accent: '#fbbf24' },
-  { id: 'cyan', name: 'Cyan', primary: '#06b6d4', primaryHover: '#0891b2', accent: '#22d3ee' },
-  { id: 'red', name: 'Red', primary: '#ef4444', primaryHover: '#dc2626', accent: '#f87171' },
-];
-
-const hexToRgb = (hex: string): string => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  if (!result) return '0, 0, 0';
-  return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+// User credentials configuration
+const USER_CREDENTIALS: Record<UserRole, string> = {
+  'Owner': 'Antihero1',
+  'Gooner 💔🥀': 'goontime67',
+  'Migueeeel [Beta Tester]': 'Betamiguel1',
 };
 
+// Simple theme application function
 const applyTheme = (themeId: string) => {
-  const theme = THEMES.find(t => t.id === themeId);
-  if (!theme) return;
-
-  const root = document.documentElement;
-  root.style.setProperty('--color-primary', theme.primary);
-  root.style.setProperty('--color-primary-hover', theme.primaryHover);
-  root.style.setProperty('--color-accent', theme.accent);
-  root.style.setProperty('--color-primary-rgb', hexToRgb(theme.primary));
-  root.style.setProperty('--color-accent-rgb', hexToRgb(theme.accent));
+  // This will be handled by ThemeCustomizer component
+  // Just ensure the theme is loaded from localStorage
+  const savedTheme = localStorage.getItem('app-theme');
+  if (savedTheme) {
+    // Theme will be applied by ThemeCustomizer when it mounts
+  }
 };
+
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState<UserRole>('Gooner 💔🥀');
+  const [userRole, setUserRole] = useState<UserRole>('Owner');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [currentView, setCurrentView] = useState<AppView>(AppView.RNG_TACTICIAN);
@@ -57,11 +49,13 @@ const App: React.FC = () => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'goontime67') {
+    const expectedPassword = USER_CREDENTIALS[userRole];
+    if (password === expectedPassword) {
+      setCurrentUser(userRole); // Set the current user for user-specific data
       setIsLoggedIn(true);
       setError('');
     } else {
-      setError('KYS 💔🥀');
+      setError('Wrong password! 💔🥀');
     }
   };
 
@@ -74,7 +68,13 @@ const App: React.FC = () => {
       case AppView.PROBABILITIES:
         return userRole === 'Owner' ? <ProbabilityConfig /> : <RngTactician />;
       case AppView.MINI_GAMES:
-        return <MiniGames />;
+        return <MiniGames onSelectGame={(game) => setCurrentView(game)} />;
+      case AppView.CRASH_GAME:
+        return <CrashGame />;
+      case AppView.MINESWEEPER:
+        return <Minesweeper />;
+      case AppView.SLOT_MACHINE:
+        return <SlotMachine />;
       case AppView.THEME_CUSTOMIZER:
         return userRole === 'Owner' ? <ThemeCustomizer /> : <RngTactician />;
       case AppView.PUNISHMENT_WHEEL:
@@ -93,7 +93,7 @@ const App: React.FC = () => {
       <div className="fixed inset-0 z-[100] bg-[#09090b] flex flex-col items-center justify-center p-4">
         <div className="glass-panel p-8 rounded-2xl border border-white/10 w-full max-w-md space-y-8 text-center shadow-2xl relative overflow-hidden fade-in-up">
           <div className="absolute inset-0 noise-bg opacity-20 pointer-events-none"></div>
-
+          
           <div className="relative z-10 space-y-2">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-500 bg-clip-text text-transparent">System Access</h1>
             <p className="text-zinc-500 text-xs uppercase tracking-widest">Authentication Required</p>
@@ -101,28 +101,30 @@ const App: React.FC = () => {
 
           <form onSubmit={handleLogin} className="relative z-10 space-y-4 text-left">
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Identified As</label>
-              <select
+              <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1" htmlFor="user-role">Identified As</label>
+              <select 
+                id="user-role"
                 value={userRole}
                 onChange={(e) => setUserRole(e.target.value as UserRole)}
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500/50 appearance-none font-mono text-sm cursor-pointer transition-all hover:border-zinc-500"
               >
-                <option value="Gooner 💔🥀">Gooner 💔🥀</option>
                 <option value="Owner">Owner</option>
+                <option value="Gooner 💔🥀">Gooner 💔🥀</option>
+                <option value="Migueeeel [Beta Tester]">Migueeeel [Beta Tester]</option>
               </select>
             </div>
-
+            
             <div className="space-y-1">
               <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Key Phrase</label>
-              <input
-                type="password"
+              <input 
+                type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500/50 text-center placeholder-zinc-800 transition-all font-mono text-sm"
+                placeholder="••••••••" 
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-3 text-white focus:outline-none focus:border-emerald-500/50 text-center placeholder-zinc-800 transition-all font-mono text-sm" 
               />
             </div>
-
+            
             <button type="submit" className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white font-bold uppercase tracking-widest text-xs transition-all hover:scale-[1.02] hover:border-emerald-500/30 hover:text-emerald-400">
               Enter System
             </button>
@@ -136,18 +138,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 flex">
-      <Sidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
+      <Sidebar 
+        currentView={currentView} 
+        onViewChange={setCurrentView} 
         isOwner={userRole === 'Owner'}
+        userRole={userRole}
+        hasVipBadge={hasVipBadge()}
       />
-
+      
       <main className="flex-1 ml-20 md:ml-64 p-6 md:p-12 transition-all">
         <div className="max-w-7xl mx-auto pt-8">
-          {renderView()}
+           {renderView()}
         </div>
       </main>
-
+      
       <div className="fixed inset-0 pointer-events-none z-[-1]">
         <div className="absolute top-0 left-0 w-full h-[500px] bg-emerald-500/5 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/5 blur-[120px] rounded-full mix-blend-screen pointer-events-none"></div>
@@ -157,4 +161,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-

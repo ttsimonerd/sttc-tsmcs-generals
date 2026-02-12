@@ -158,6 +158,8 @@ const VipSupplies: React.FC = () => {
                       type="text"
                       value={editForm}
                       onChange={(e) => setEditForm(e.target.value)}
+                      title="Edit Supply Name"
+                      placeholder="Supply name..."
                       className="w-full bg-black/30 border border-zinc-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-amber-500/50"
                       autoFocus
                     />
