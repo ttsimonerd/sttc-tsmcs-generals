@@ -1,15 +1,20 @@
 export enum AppView {
-  RNG_TACTICIAN = 'RNG_TACTICIAN',
-  DATABASE = 'DATABASE',
-  PROBABILITIES = 'PROBABILITIES',
-  MINI_GAMES = 'MINI_GAMES',
-  THEME_CUSTOMIZER = 'THEME_CUSTOMIZER',
-  PUNISHMENT_WHEEL = 'PUNISHMENT_WHEEL',
-  SHOP = 'SHOP',
-  VIP_SUPPLIES = 'VIP_SUPPLIES',
-  MINESWEEPER = 'MINESWEEPER',
-  CRASH_GAME = 'CRASH_GAME',
-  SLOT_MACHINE = 'SLOT_MACHINE'
+  RNG_TACTICIAN = 'rng-tactician',
+  DATABASE = 'database',
+  PROBABILITIES = 'probabilities',
+  MINI_GAMES = 'mini-games',
+  CRASH_GAME = 'crash-game',
+  MINESWEEPER = 'minesweeper',
+  SLOT_MACHINE = 'slot-machine',
+  THEME_CUSTOMIZER = 'theme-customizer',
+  PUNISHMENT_WHEEL = 'punishment-wheel',
+  SHOP = 'shop',
+  VIP_SUPPLIES = 'vip-supplies',
+  MATERIAL_REGISTRY = 'material-registry',
+  USER_MANAGEMENT = 'user-management',
+  RIDDLE_EDITOR = 'riddle-editor',
+  GAME_TUNER = 'game-tuner',
+  SYSTEM_CONTROL = 'system-control'
 }
 
 export type UserRole = 'Owner' | 'Gooner 💔🥀' | 'Migueeeel [Beta Tester]';
@@ -52,75 +57,75 @@ export const RARITY_CONFIG = {
 };
 
 export interface RiddleResponse {
-    question: string;
-    answer: string;
+  question: string;
+  answer: string;
 }
 
 export interface FailedLog {
-    question: string;
-    answer: string;
-    userAnswer: string;
+  question: string;
+  answer: string;
+  userAnswer: string;
 }
 
 export interface ActionLog {
-    id: string;
-    time: string;
-    message: string;
-    type: 'success' | 'error' | 'warning' | 'neutral';
+  id: string;
+  time: string;
+  message: string;
+  type: 'success' | 'error' | 'warning' | 'neutral';
 }
 
 export interface DayProbability {
-    dayName: string;
-    dayNumber: number;
-    yesProb: number;
-    noProb: number;
+  dayName: string;
+  dayNumber: number;
+  yesProb: number;
+  noProb: number;
 }
 
 export interface WeekendRestriction {
-    enabled: boolean;
-    message: string;
+  enabled: boolean;
+  message: string;
 }
 
 export interface ProbabilityConfig {
-    days: DayProbability[];
-    weekendRestriction: WeekendRestriction;
+  days: DayProbability[];
+  weekendRestriction: WeekendRestriction;
 }
 
 export interface VipSupply {
-    id: string;
-    name: string;
-    rarity: Rarity;
+  id: string;
+  name: string;
+  rarity: Rarity;
 }
 
 export const DEFAULT_DAYS: DayProbability[] = [
-    { dayName: 'Monday', dayNumber: 0, yesProb: 18, noProb: 72 },
-    { dayName: 'Tuesday', dayNumber: 1, yesProb: 36, noProb: 54 },
-    { dayName: 'Wednesday', dayNumber: 2, yesProb: 36, noProb: 54 },
-    { dayName: 'Thursday', dayNumber: 3, yesProb: 89, noProb: 1 },
-    { dayName: 'Friday', dayNumber: 4, yesProb: 18, noProb: 72 },
-    { dayName: 'Saturday', dayNumber: 5, yesProb: 0, noProb: 90 },
-    { dayName: 'Sunday', dayNumber: 6, yesProb: 0, noProb: 90 }
+  { dayName: 'Monday', dayNumber: 0, yesProb: 18, noProb: 72 },
+  { dayName: 'Tuesday', dayNumber: 1, yesProb: 36, noProb: 54 },
+  { dayName: 'Wednesday', dayNumber: 2, yesProb: 36, noProb: 54 },
+  { dayName: 'Thursday', dayNumber: 3, yesProb: 89, noProb: 1 },
+  { dayName: 'Friday', dayNumber: 4, yesProb: 18, noProb: 72 },
+  { dayName: 'Saturday', dayNumber: 5, yesProb: 0, noProb: 90 },
+  { dayName: 'Sunday', dayNumber: 6, yesProb: 0, noProb: 90 }
 ];
 
 export const DEFAULT_WEEKEND_RESTRICTION: WeekendRestriction = {
-    enabled: true,
-    message: "No Rolls For The Weekend!"
+  enabled: true,
+  message: "No Rolls For The Weekend!"
 };
 
 export const DEFAULT_VIP_SUPPLIES: VipSupply[] = [
-    { id: '1', name: 'Premium Select', rarity: 'COMMON' },
-    { id: '2', name: 'Golden Collection', rarity: 'RARE' },
-    { id: '3', name: 'Exclusive Access', rarity: 'EPIC' },
-    { id: '4', name: 'VIP Member Bundle', rarity: 'LEGENDARY' },
-    { id: '5', name: 'Platinum Tier', rarity: 'LEGENDARY' },
-    { id: '6', name: 'Elite Pass', rarity: 'EPIC' },
-    { id: '7', name: 'Diamond Selection', rarity: 'LEGENDARY' },
-    { id: '8', name: 'Royal Treatment', rarity: 'EPIC' },
-    { id: '9', name: 'VIP Exclusive', rarity: 'RARE' },
-    { id: '10', name: 'Top Tier Item', rarity: 'RARE' },
-    { id: '11', name: 'Silver Badge', rarity: 'COMMON' },
-    { id: '12', name: 'Bronze Collection', rarity: 'COMMON' },
-    { id: '13', name: 'Mystery Crate', rarity: 'RARE' },
-    { id: '14', name: 'Legendary Chest', rarity: 'LEGENDARY' },
-    { id: '15', name: 'Epic Pack', rarity: 'EPIC' }
+  { id: '1', name: 'Premium Select', rarity: 'COMMON' },
+  { id: '2', name: 'Golden Collection', rarity: 'RARE' },
+  { id: '3', name: 'Exclusive Access', rarity: 'EPIC' },
+  { id: '4', name: 'VIP Member Bundle', rarity: 'LEGENDARY' },
+  { id: '5', name: 'Platinum Tier', rarity: 'LEGENDARY' },
+  { id: '6', name: 'Elite Pass', rarity: 'EPIC' },
+  { id: '7', name: 'Diamond Selection', rarity: 'LEGENDARY' },
+  { id: '8', name: 'Royal Treatment', rarity: 'EPIC' },
+  { id: '9', name: 'VIP Exclusive', rarity: 'RARE' },
+  { id: '10', name: 'Top Tier Item', rarity: 'RARE' },
+  { id: '11', name: 'Silver Badge', rarity: 'COMMON' },
+  { id: '12', name: 'Bronze Collection', rarity: 'COMMON' },
+  { id: '13', name: 'Mystery Crate', rarity: 'RARE' },
+  { id: '14', name: 'Legendary Chest', rarity: 'LEGENDARY' },
+  { id: '15', name: 'Epic Pack', rarity: 'EPIC' }
 ];

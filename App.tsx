@@ -11,6 +11,11 @@ import VipSupplies from './components/VipSupplies';
 import CrashGame from './components/CrashGame';
 import Minesweeper from './components/Minesweeper';
 import SlotMachine from './components/SlotMachine';
+import MaterialRegistry from './components/MaterialRegistry';
+import UserManagement from './components/UserManagement';
+import RiddleEditor from './components/RiddleEditor';
+import GameTuner from './components/GameTuner';
+import SystemControl from './components/SystemControl';
 import { AppView, UserRole } from './types';
 import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
@@ -38,14 +43,29 @@ const App: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [currentView, setCurrentView] = useState<AppView>(AppView.RNG_TACTICIAN);
+  const [broadcastMessage, setBroadcastMessage] = useState<string | null>(null);
 
-  // Apply saved theme on app load
+  // Apply saved theme and listen for broadcasts
   useEffect(() => {
     const savedTheme = localStorage.getItem('app-theme');
     if (savedTheme) {
-      applyTheme(savedTheme);
+      // Theme logic is handled by ThemeCustomizer, but we ensure it's loaded
     }
-  }, []);
+
+    // Check for broadcast message
+    const checkBroadcast = () => {
+      const msg = localStorage.getItem('system-broadcast');
+      if (msg && msg !== broadcastMessage) {
+        setBroadcastMessage(msg);
+      } else if (!msg && broadcastMessage) {
+        setBroadcastMessage(null);
+      }
+    };
+
+    checkBroadcast();
+    const interval = setInterval(checkBroadcast, 2000); // Poll for broadcasts
+    return () => clearInterval(interval);
+  }, [broadcastMessage]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,13 +80,16 @@ const App: React.FC = () => {
   };
 
   const renderView = () => {
+    // Helper to ensure only Owner can see management views
+    const ownerOnly = (component: React.ReactNode) => userRole === 'Owner' ? component : <RngTactician />;
+
     switch (currentView) {
       case AppView.RNG_TACTICIAN:
         return <RngTactician />;
       case AppView.DATABASE:
-        return userRole === 'Owner' ? <DatabaseRegistry /> : <RngTactician />;
+        return ownerOnly(<DatabaseRegistry />);
       case AppView.PROBABILITIES:
-        return userRole === 'Owner' ? <ProbabilityConfig /> : <RngTactician />;
+        return ownerOnly(<ProbabilityConfig />);
       case AppView.MINI_GAMES:
         return <MiniGames onSelectGame={(game) => setCurrentView(game)} />;
       case AppView.CRASH_GAME:
@@ -76,13 +99,23 @@ const App: React.FC = () => {
       case AppView.SLOT_MACHINE:
         return <SlotMachine />;
       case AppView.THEME_CUSTOMIZER:
-        return userRole === 'Owner' ? <ThemeCustomizer /> : <RngTactician />;
+        return ownerOnly(<ThemeCustomizer />);
       case AppView.PUNISHMENT_WHEEL:
         return <PunishmentWheel isOwner={userRole === 'Owner'} />;
       case AppView.SHOP:
         return <Shop isOwner={userRole === 'Owner'} />;
       case AppView.VIP_SUPPLIES:
-        return userRole === 'Owner' ? <VipSupplies /> : <RngTactician />;
+        return ownerOnly(<VipSupplies />);
+      case AppView.MATERIAL_REGISTRY:
+        return ownerOnly(<MaterialRegistry />);
+      case AppView.USER_MANAGEMENT:
+        return ownerOnly(<UserManagement />);
+      case AppView.RIDDLE_EDITOR:
+        return ownerOnly(<RiddleEditor />);
+      case AppView.GAME_TUNER:
+        return ownerOnly(<GameTuner />);
+      case AppView.SYSTEM_CONTROL:
+        return ownerOnly(<SystemControl />);
       default:
         return <RngTactician />;
     }
@@ -147,6 +180,15 @@ const App: React.FC = () => {
       />
 
       <main className="flex-1 ml-20 md:ml-64 p-6 md:p-12 transition-all">
+        {broadcastMessage && (
+          <div className="mb-8 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-4 animate-pop-in">
+            <span className="text-2xl animate-pulse">📢</span>
+            <div>
+              <p className="text-[10px] text-emerald-500 uppercase tracking-widest font-bold">System Broadcast</p>
+              <p className="text-sm text-white font-medium">{broadcastMessage}</p>
+            </div>
+          </div>
+        )}
         <div className="max-w-7xl mx-auto pt-8">
           {renderView()}
         </div>
