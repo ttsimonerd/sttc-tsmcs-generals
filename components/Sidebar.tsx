@@ -30,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
   }
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-20 md:w-64 glass-panel border-r border-white/10 z-50 flex flex-col pt-8 transition-all duration-300">
+    <aside className="fixed left-0 top-0 h-full w-20 md:w-64 glass-panel border-r border-white/10 z-50 flex flex-col pt-8 transition-all duration-300 overflow-y-auto custom-scrollbar">
       <div className="px-6 mb-10 hidden md:block">
         <h1 className="text-2xl font-bold gradient-theme-text">
           TSmc
@@ -44,8 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
             key={item.id}
             onClick={() => onViewChange(item.id)}
             className={`w-full flex items-center gap-4 px-3 py-3 rounded-xl transition-all duration-200 group
-              ${currentView === item.id 
-                ? 'bg-theme-primary-soft text-white border-theme-primary-soft border shadow-theme-primary' 
+              ${currentView === item.id
+                ? 'bg-theme-primary-soft text-white border-theme-primary-soft border shadow-theme-primary'
                 : 'text-zinc-400 hover:bg-white/5 hover:text-white'
               }`}
           >
@@ -56,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange, isOwner, u
           </button>
         ))}
       </nav>
-      
+
       <div className="p-6 hidden md:block space-y-3">
         {/* User Role with VIP Badge */}
         {userRole && (
