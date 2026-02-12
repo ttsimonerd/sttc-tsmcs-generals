@@ -4,7 +4,6 @@ import RngTactician from './components/RngTactician';
 import DatabaseRegistry from './components/DatabaseRegistry';
 import ProbabilityConfig from './components/ProbabilityConfig';
 import MiniGames from './components/MiniGames';
-import ThemeCustomizer from './components/ThemeCustomizer';
 import PunishmentWheel from './components/PunishmentWheel';
 import Shop from './components/Shop';
 import VipSupplies from './components/VipSupplies';
@@ -34,15 +33,7 @@ const getCredentials = (): Record<UserRole, string> => {
   return DEFAULT_USER_CREDENTIALS;
 };
 
-// Simple theme application function
-const applyTheme = (themeId: string) => {
-  // This will be handled by ThemeCustomizer component
-  // Just ensure the theme is loaded from localStorage
-  const savedTheme = localStorage.getItem('app-theme');
-  if (savedTheme) {
-    // Theme will be applied by ThemeCustomizer when it mounts
-  }
-};
+import { applyTheme, getSavedTheme } from './services/themeService';
 
 
 const App: React.FC = () => {
@@ -55,10 +46,7 @@ const App: React.FC = () => {
 
   // Apply saved theme and listen for broadcasts
   useEffect(() => {
-    const savedTheme = localStorage.getItem('app-theme');
-    if (savedTheme) {
-      // Theme logic is handled by ThemeCustomizer, but we ensure it's loaded
-    }
+    applyTheme(getSavedTheme());
 
     // Check for broadcast message
     const checkBroadcast = () => {
@@ -107,8 +95,6 @@ const App: React.FC = () => {
         return <Minesweeper />;
       case AppView.SLOT_MACHINE:
         return <SlotMachine />;
-      case AppView.THEME_CUSTOMIZER:
-        return ownerOnly(<ThemeCustomizer />);
       case AppView.PUNISHMENT_WHEEL:
         return <PunishmentWheel isOwner={userRole === 'Owner'} />;
       case AppView.SHOP:

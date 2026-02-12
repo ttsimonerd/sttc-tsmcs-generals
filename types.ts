@@ -6,7 +6,6 @@ export enum AppView {
   CRASH_GAME = 'crash-game',
   MINESWEEPER = 'minesweeper',
   SLOT_MACHINE = 'slot-machine',
-  THEME_CUSTOMIZER = 'theme-customizer',
   PUNISHMENT_WHEEL = 'punishment-wheel',
   SHOP = 'shop',
   VIP_SUPPLIES = 'vip-supplies',
