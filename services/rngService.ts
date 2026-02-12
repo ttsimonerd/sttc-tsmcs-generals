@@ -26,7 +26,7 @@ const getCurrentWeek = (): number => {
 export const loadWeekData = (): WeekData => {
   const raw = localStorage.getItem(getWeekDataKey());
   const currentWeek = getCurrentWeek();
-  
+
   if (!raw) {
     const newData = { week_number: currentWeek, yes_count: 0 };
     saveWeekData(newData);
@@ -62,7 +62,7 @@ const getTodayProbabilities = (): [number, number] | null => {
   const storedConfig = localStorage.getItem(PROBABILITY_CONFIG_KEY);
   let days: DayProbability[] = DEFAULT_DAYS;
   let weekendRestriction = DEFAULT_WEEKEND_RESTRICTION;
-  
+
   if (storedConfig) {
     try {
       const config = JSON.parse(storedConfig) as ProbabilityConfig;
@@ -111,24 +111,24 @@ export const getWeekendMessage = (): string => {
 // Generate random Edge message and return the supply as well
 export const generateEdgeMessage = (): { message: string; supply: string } => {
   const randomDays = Math.floor(Math.random() * 7) + 1; // 1-7 days
-  
+
   // Get a random material from the list
   const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
   const sourceList = stored ? JSON.parse(stored) : [...MATERIALS_LIST];
-  const randomMaterial = sourceList.length > 0 
-    ? sourceList[Math.floor(Math.random() * sourceList.length)] 
+  const randomMaterial = sourceList.length > 0
+    ? sourceList[Math.floor(Math.random() * sourceList.length)]
     : 'special supply';
-  
+
   return {
     message: `Edge ${randomDays} days and when you come back release the load with ${randomMaterial} 🥴`,
     supply: randomMaterial
   };
 };
 
-export const rollWithLimit = (): string => {
+export const rollWithLimit = (forceBypass: boolean = false): string => {
   const data = loadWeekData();
 
-  if (data.yes_count >= 3) {
+  if (data.yes_count >= 3 && !forceBypass) {
     return "Dont Break The Rule!";
   }
 
@@ -138,28 +138,24 @@ export const rollWithLimit = (): string => {
   }
 
   // Edge has fixed 10% chance
-  const edgeChance = 0.10;
-  const edgeRoll = Math.random();
-  
-  if (edgeRoll < edgeChance) {
-    return generateEdgeMessage().message;
-  }
-  
   // YES/NO are calculated from the remaining 90%
-  // probYes and probNo from getTodayProbabilities are already out of 90 (not 100)
-  // So if user set YES=40%, probYes = 0.40 (representing 40% of 90%)
   const [probNo, probYes] = probs;
-  
-  // Scale to actual probability (probYes is already normalized to 0-1 scale for 90%)
-  // No additional scaling needed since UI sliders already represent the 90% share
-  const result = Math.random() < probYes ? "Yes 🥵" : "No 🥶";
 
-  if (result === "Yes 🥵") {
-    data.yes_count += 1;
-    saveWeekData(data);
+  const roll = Math.random();
+
+  // 10% Edge | probYes% Yes | probNo% No
+  if (roll < 0.10) {
+    return generateEdgeMessage().message;
+  } else if (roll < 0.10 + probYes) {
+    const result = "Yes 🥵";
+    if (!forceBypass) {
+      data.yes_count += 1;
+      saveWeekData(data);
+    }
+    return result;
+  } else {
+    return "No 🥶";
   }
-
-  return result;
 };
 
 export const checkMultiple = (): string => {
@@ -169,11 +165,11 @@ export const checkMultiple = (): string => {
 
 export const getMaterials = (num: number): string[] => {
   const selected: string[] = [];
-  
+
   // Try to load from dynamic registry first
   const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
   const sourceList = stored ? JSON.parse(stored) : [...MATERIALS_LIST];
-  
+
   for (let i = 0; i < num; i++) {
     if (sourceList.length === 0) break;
     const randomIndex = Math.floor(Math.random() * sourceList.length);

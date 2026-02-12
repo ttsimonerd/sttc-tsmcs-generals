@@ -45,163 +45,187 @@ const ROULETTE_RESULTS = ['No 🥶', 'Yes 🥵', 'No 🥶', 'Yes 🥵', 'Dont Br
 
 // Roulette Wheel Component - simplified and robust
 const RouletteWheel: React.FC<{
-isSpinning: boolean;
-onComplete: (result: string) => void;
-finalResult: string;
+  isSpinning: boolean;
+  onComplete: (result: string) => void;
+  finalResult: string;
 }> = ({ isSpinning, onComplete, finalResult }) => {
-const wheelRef = useRef(null as HTMLDivElement | null);
-const [rotation, setRotation] = useState(0);
-const [showResult, setShowResult] = useState(false);
-const [resultAnimation, setResultAnimation] = useState('idle' as ResultAnimation);
-const animationRef = useRef(null as number | null);
-const rotationRef = useRef(0 as number);
+  const wheelRef = useRef(null as HTMLDivElement | null);
+  const [rotation, setRotation] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+  const [resultAnimation, setResultAnimation] = useState('idle' as ResultAnimation);
+  const animationRef = useRef(null as number | null);
+  const rotationRef = useRef(0 as number);
 
-const segmentAngle = 360 / ROULETTE_RESULTS.length;
-const isEdgeResult = finalResult.includes('Edge');
+  const segmentAngle = 360 / ROULETTE_RESULTS.length;
+  const isEdgeResult = finalResult.includes('Edge');
 
-// Spin to the exact segment center under the top pointer
-useEffect(() => {
-if (!isSpinning) {
-if (animationRef.current) cancelAnimationFrame(animationRef.current);
-return;
-}
+  // Spin to the exact segment center under the top pointer
+  useEffect(() => {
+    if (!isSpinning) {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+      return;
+    }
 
-const targetIndex = ROULETTE_RESULTS.findIndex(
-(r) => (finalResult.includes('Edge') && r.includes('Edge')) || r === finalResult
-);
-if (targetIndex === -1) return;
+    const targetIndex = ROULETTE_RESULTS.findIndex(
+      (r) => (finalResult.includes('Edge') && r.includes('Edge')) || r === finalResult
+    );
+    if (targetIndex === -1) return;
 
-const extraTurns = 4 * 360; // 4 full spins
-const segmentCenter = targetIndex * segmentAngle + segmentAngle / 2;
-// Align the segment center to the top pointer (270deg)
-const centerOffset = 270; // degrees (top)
-let target = centerOffset - segmentCenter;
+    const extraTurns = 4 * 360; // 4 full spins
+    const segmentCenter = targetIndex * segmentAngle + segmentAngle / 2;
+    // Align the segment center to the top pointer (270deg)
+    const centerOffset = 270; // degrees (top)
+    let target = centerOffset - segmentCenter;
 
-// Normalize target to [0, 360)
-target = ((target % 360) + 360) % 360;
+    // Normalize target to [0, 360)
+    target = ((target % 360) + 360) % 360;
 
-const start = rotationRef.current % 360;
-const end = start + extraTurns + target;
+    const start = rotationRef.current % 360;
+    const end = start + extraTurns + target;
 
-const duration = isEdgeResult ? 5000 : 3000;
-const startTime = performance.now();
+    const duration = isEdgeResult ? 5000 : 3000;
+    const startTime = performance.now();
 
-const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
-const animate = (now: number) => {
-const elapsed = now - startTime;
-const p = Math.min(1, elapsed / duration);
-const eased = easeOutCubic(p);
-const current = start + (end - start) * eased;
-rotationRef.current = current;
-setRotation(current);
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const p = Math.min(1, elapsed / duration);
+      const eased = easeOutCubic(p);
+      const current = start + (end - start) * eased;
+      rotationRef.current = current;
+      setRotation(current);
 
-if (p < 1) {
-animationRef.current = requestAnimationFrame(animate);
-} else {
-rotationRef.current = end;
-setRotation(end);
-setShowResult(true);
-setResultAnimation('pulse');
-setTimeout(() => setResultAnimation('glow'), 250);
-onComplete(finalResult);
-}
-};
+      if (p < 1) {
+        animationRef.current = requestAnimationFrame(animate);
+      } else {
+        rotationRef.current = end;
+        setRotation(end);
+        setShowResult(true);
+        setResultAnimation('pulse');
+        setTimeout(() => setResultAnimation('glow'), 250);
+        onComplete(finalResult);
+      }
+    };
 
-animationRef.current = requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame(animate);
 
-return () => {
-if (animationRef.current) cancelAnimationFrame(animationRef.current);
-};
-}, [isSpinning, finalResult, segmentAngle, isEdgeResult, onComplete]);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [isSpinning, finalResult, segmentAngle, isEdgeResult, onComplete]);
 
-// Reset result visuals when not spinning
-useEffect(() => {
-if (!isSpinning) {
-setShowResult(false);
-setResultAnimation('idle');
-}
-}, [isSpinning]);
+  // Reset result visuals when not spinning
+  useEffect(() => {
+    if (!isSpinning) {
+      setShowResult(false);
+      setResultAnimation('idle');
+    }
+  }, [isSpinning]);
 
-// Colors for segments
-const segmentColors = ['#3f3f46', '#27272a'];
+  // Colors for segments
+  const segmentColors = ['#3f3f46', '#27272a'];
 
-return (
-<div className="relative w-72 h-72 md:w-96 md:h-96">
-{/* Pointer */}
-<div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-30">
-<div
-className={`w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] ${
-showResult
-? finalResult.includes('Edge')
-? 'border-t-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]'
-: 'border-t-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]'
-: 'border-t-zinc-400 drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]'
-}`}
-/>
-</div>
+  return (
+    <div className="relative w-72 h-72 md:w-96 md:h-96">
+      {/* Pointer */}
+      <div className="absolute -top-5 left-1/2 transform -translate-x-1/2 z-30">
+        <div
+          className={`w-0 h-0 border-l-[20px] border-l-transparent border-r-[20px] border-r-transparent border-t-[35px] ${showResult
+              ? finalResult.includes('Edge')
+                ? 'border-t-purple-400 drop-shadow-[0_0_15px_rgba(168,85,247,0.8)]'
+                : 'border-t-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.8)]'
+              : 'border-t-zinc-400 drop-shadow-[0_0_10px_rgba(0,0,0,0.5)]'
+            }`}
+        />
+      </div>
 
-{/* Wheel */}
-<div
-ref={wheelRef}
-className="relative w-full h-full rounded-full"
-style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.05s linear' }}
->
-<svg className="w-full h-full" viewBox="0 0 200 200">
-{/* Outer ring */}
-<circle cx="100" cy="100" r="98" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
+      {/* Wheel */}
+      <div
+        ref={wheelRef}
+        className="relative w-full h-full rounded-full"
+        style={{ transform: `rotate(${rotation}deg)`, transition: 'transform 0.05s linear' }}
+      >
+        <svg className="w-full h-full" viewBox="0 0 200 200">
+          {/* Outer ring */}
+          <circle cx="100" cy="100" r="98" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
 
-{/* Segments */}
-{ROULETTE_RESULTS.map((_, i) => {
-const startAngle = (i * segmentAngle * Math.PI) / 180;
-const endAngle = (((i + 1) * segmentAngle) * Math.PI) / 180;
-const cx = 100;
-const cy = 100;
-const r = 95;
-const x1 = cx + r * Math.cos(startAngle);
-const y1 = cy + r * Math.sin(startAngle);
-const x2 = cx + r * Math.cos(endAngle);
-const y2 = cy + r * Math.sin(endAngle);
-const largeArc = segmentAngle > 180 ? 1 : 0;
-const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
-return <path key={i} d={d} fill={segmentColors[i % 2]} stroke="#2a2a2e" strokeWidth="0.5" />;
-})}
+          {/* Segments and Labels */}
+          {ROULETTE_RESULTS.map((result, i) => {
+            const startAngle = (i * segmentAngle * Math.PI) / 180;
+            const endAngle = (((i + 1) * segmentAngle) * Math.PI) / 180;
+            const cx = 100;
+            const cy = 100;
+            const r = 95;
+            const x1 = cx + r * Math.cos(startAngle);
+            const y1 = cy + r * Math.sin(startAngle);
+            const x2 = cx + r * Math.cos(endAngle);
+            const y2 = cy + r * Math.sin(endAngle);
+            const largeArc = segmentAngle > 180 ? 1 : 0;
+            const d = `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2} Z`;
 
-{/* Inner hub */}
-<circle cx="100" cy="100" r="55" fill="#1f1f23" stroke="#2f2f35" strokeWidth="2" />
-</svg>
-</div>
+            // Text label position (radius approx 75)
+            const labelAngle = (i * segmentAngle + segmentAngle / 2) * (Math.PI / 180);
+            const labelR = 75;
+            const tx = cx + labelR * Math.cos(labelAngle);
+            const ty = cy + labelR * Math.sin(labelAngle);
+            const textRotation = (i * segmentAngle + segmentAngle / 2);
 
-{/* Center cap */}
-<div
-className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center shadow-lg z-10 transition-all duration-300 ${
-showResult
-? finalResult.includes('Edge')
-? 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-500/30 to-purple-600/20 border-purple-400'
-: 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-emerald-400'
-: 'w-14 h-14 md:w-18 md:h-18 bg-gradient-to-br from-zinc-600 to-zinc-800 border-zinc-500'
-}`}
-style={{ border: '2px solid' }}
->
-<span className={`${showResult ? (finalResult.includes('Edge') ? 'text-purple-300' : 'text-emerald-300') : 'text-zinc-500'} text-lg md:text-xl`}>
-{showResult ? '✓' : '?'}
-</span>
-</div>
+            const label = result.includes('Yes') ? 'SI' : result.includes('Edge') ? 'EDGE' : result.includes('Rule') ? 'LIMIT' : 'NO';
 
-{/* Subtle outer glow */}
-<div
-className={`absolute inset-0 rounded-full transition-all duration-500 ${
-isSpinning && isEdgeResult
-? 'bg-purple-500/20 blur-xl'
-: showResult
-? finalResult.includes('Edge')
-? 'bg-purple-500/20 blur-xl'
-: 'bg-emerald-500/10 blur-xl'
-: 'bg-zinc-800/5 blur-md'
-}`}
-/>
-</div>
-);
+            return (
+              <g key={i}>
+                <path d={d} fill={segmentColors[i % 2]} stroke="#2a2a2e" strokeWidth="0.5" />
+                <text
+                  x={tx}
+                  y={ty}
+                  fill="white"
+                  fontSize="10"
+                  fontWeight="900"
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  transform={`rotate(${textRotation + 90}, ${tx}, ${ty})`}
+                  className="select-none opacity-40 font-mono"
+                >
+                  {label}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Inner hub */}
+          <circle cx="100" cy="100" r="55" fill="#1f1f23" stroke="#2f2f35" strokeWidth="2" />
+        </svg>
+      </div>
+
+      {/* Center cap */}
+      <div
+        className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full flex items-center justify-center shadow-lg z-10 transition-all duration-300 ${showResult
+            ? finalResult.includes('Edge')
+              ? 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-purple-500/30 to-purple-600/20 border-purple-400'
+              : 'w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-emerald-400'
+            : 'w-14 h-14 md:w-18 md:h-18 bg-gradient-to-br from-zinc-600 to-zinc-800 border-zinc-500'
+          }`}
+        style={{ border: '2px solid' }}
+      >
+        <span className={`${showResult ? (finalResult.includes('Edge') ? 'text-purple-300' : 'text-emerald-300') : 'text-zinc-500'} text-lg md:text-xl`}>
+          {showResult ? '✓' : '?'}
+        </span>
+      </div>
+
+      {/* Subtle outer glow */}
+      <div
+        className={`absolute inset-0 rounded-full transition-all duration-500 ${isSpinning && isEdgeResult
+            ? 'bg-purple-500/20 blur-xl'
+            : showResult
+              ? finalResult.includes('Edge')
+                ? 'bg-purple-500/20 blur-xl'
+                : 'bg-emerald-500/10 blur-xl'
+              : 'bg-zinc-800/5 blur-md'
+          }`}
+      />
+    </div>
+  );
 };
 
 const RngTactician: React.FC = () => {
@@ -230,11 +254,11 @@ const RngTactician: React.FC = () => {
   // Points state
   const [currentPoints, setCurrentPoints] = useState(0);
   const [showDailyBonus, setShowDailyBonus] = useState(false);
-  
+
   // Extra Roll item state
   const [extraRollCount, setExtraRollCount] = useState(0);
   const [showUseExtraRoll, setShowUseExtraRoll] = useState(false);
-  
+
   // Double points timer display
   const [doublePointsTime, setDoublePointsTime] = useState(0);
 
@@ -275,41 +299,33 @@ const RngTactician: React.FC = () => {
 
   const handleRoll = (forceBypass: boolean = false) => {
     setShowUseExtraRoll(false);
-    
+
     // Pre-calculate the result
     let result = rollWithLimit();
-    
+
     // If hitting limit and we have Extra Roll, offer to use it
     if (result === "Dont Break The Rule!" && extraRollCount > 0 && !forceBypass) {
       setShowUseExtraRoll(true);
       setRollResult(result);
       return;
     }
-    
+
     // If forceBypass is true, we're using an Extra Roll
     if (forceBypass && result === "Dont Break The Rule!") {
       if (useFromInventory(ITEM_IDS.EXTRA_ROLL)) {
-        // Override the result with a new random roll (bypassing limit check)
-        const probs = [0.36, 0.10]; // Default yes/edge probabilities
-        const edgeRoll = Math.random();
-        if (edgeRoll < 0.10) {
-          // Edge result
-          const randomDays = Math.floor(Math.random() * 7) + 1;
-          result = `Edge ${randomDays} days... 🥴`;
-        } else {
-          result = Math.random() < 0.4 ? "Yes 🥵" : "No 🥶";
-        }
+        // Use the unified roll logic but with bypass enabled
+        result = rollWithLimit(true);
         addToLog('🎲 Used Extra Roll!', 'warning');
         setExtraRollCount(getInventoryCount(ITEM_IDS.EXTRA_ROLL));
       }
     }
-    
+
     setIsRolling(true);
     setStep('ROLLING');
     setMaterials([]);
     setMultipleResult('');
     setSupplyTitle('');
-    
+
     rollingResultRef.current = result;
   };
 
@@ -337,7 +353,7 @@ const RngTactician: React.FC = () => {
       addToLog(edgeSupply, 'warning');
       setStep('SHOW_MATERIALS');
     }
-    
+
     // Lose = nothing changes (no points added or removed)
   };
 
@@ -466,7 +482,7 @@ const RngTactician: React.FC = () => {
                 <span className="font-mono text-amber-400 font-bold">💰 {currentPoints}</span>
               </div>
             </div>
-            
+
             {/* Daily Bonus */}
             {showDailyBonus && (
               <button
@@ -496,15 +512,14 @@ const RngTactician: React.FC = () => {
                   <div key={log.id} className="text-xs border-l-2 border-zinc-800 pl-2 py-0.5">
                     <span className="text-zinc-600 font-mono mr-2">[{log.time}]</span>
                     <span
-                      className={`${
-                        log.type === 'success'
+                      className={`${log.type === 'success'
                           ? 'text-emerald-400'
                           : log.type === 'error'
-                          ? 'text-red-400'
-                          : log.type === 'warning'
-                          ? 'text-yellow-500'
-                          : 'text-zinc-400'
-                      }`}
+                            ? 'text-red-400'
+                            : log.type === 'warning'
+                              ? 'text-yellow-500'
+                              : 'text-zinc-400'
+                        }`}
                     >
                       {log.message}
                     </span>
@@ -516,9 +531,8 @@ const RngTactician: React.FC = () => {
 
           {/* The Redeemer Panel */}
           <div
-            className={`glass-panel p-6 rounded-2xl space-y-4 border relative overflow-hidden transition-all duration-500 ${
-              redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
-            }`}
+            className={`glass-panel p-6 rounded-2xl space-y-4 border relative overflow-hidden transition-all duration-500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
+              }`}
           >
             {redeemerOpen && <div className="absolute inset-0 bg-red-900/5 pointer-events-none animate-pulse"></div>}
             <div className="relative z-10">
@@ -541,11 +555,10 @@ const RngTactician: React.FC = () => {
                   <button
                     onClick={handleSummonRedeemer}
                     disabled={weekData.yes_count < 3}
-                    className={`w-full py-2 border rounded-lg text-xs font-bold uppercase transition-all ${
-                      weekData.yes_count < 3
+                    className={`w-full py-2 border rounded-lg text-xs font-bold uppercase transition-all ${weekData.yes_count < 3
                         ? 'bg-zinc-800 text-zinc-600 border-zinc-700 cursor-not-allowed'
                         : 'bg-red-500/10 hover:bg-red-500/30 text-red-400 border-red-500/50 hover:scale-[1.02]'
-                    }`}
+                      }`}
                   >
                     {weekData.yes_count < 3 ? 'Not Available (Need 3 Wins)' : 'Challenge Fate'}
                   </button>
@@ -569,11 +582,10 @@ const RngTactician: React.FC = () => {
                         <button
                           onClick={handleSubmitRedemption}
                           disabled={!userAnswer.trim()}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${
-                            userAnswer.trim()
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${userAnswer.trim()
                               ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]'
                               : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                          }`}
+                            }`}
                         >
                           Submit Answer
                         </button>
@@ -659,8 +671,8 @@ const RngTactician: React.FC = () => {
 
           {step === 'IDLE' && (
             <>
-              <RouletteWheel isSpinning={false} onComplete={() => {}} finalResult="" />
-              
+              <RouletteWheel isSpinning={false} onComplete={() => { }} finalResult="" />
+
               {/* Extra Roll Offer Modal */}
               {showUseExtraRoll && (
                 <div className="p-6 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30 space-y-4 animate-fade-in">
@@ -682,7 +694,7 @@ const RngTactician: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {!showUseExtraRoll && (
                 <>
                   <button
@@ -692,7 +704,7 @@ const RngTactician: React.FC = () => {
                     INITIATE ROLL
                   </button>
                   <p className="text-zinc-500 text-sm">Probabilities calculated based on temporal coordinates.</p>
-                  
+
                   {/* Active effects indicator */}
                   {(extraRollCount > 0 || doublePointsTime > 0) && (
                     <div className="flex flex-wrap gap-2 justify-center mt-2">
@@ -725,25 +737,24 @@ const RngTactician: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-zinc-400 uppercase tracking-widest text-xs animate-fade-in-up">Outcome</p>
                 <h2
-                  className={`text-6xl font-black ${
-                    rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
+                  className={`text-6xl font-black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
                       ? 'text-emerald-400 animate-success-pop'
                       : rollResult.includes('Rule') || rollResult.includes('Weekend')
-                      ? 'text-yellow-500 animate-warning-pulse'
-                      : rollResult.includes('Edge')
-                      ? 'text-purple-400 animate-success-pop'
-                      : 'text-red-500 animate-failure-shake'
-                  }`}
+                        ? 'text-yellow-500 animate-warning-pulse'
+                        : rollResult.includes('Edge')
+                          ? 'text-purple-400 animate-success-pop'
+                          : 'text-red-500 animate-failure-shake'
+                    }`}
                 >
                   <span
                     className={
                       rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
                         ? 'animate-success-glow inline-block'
                         : rollResult.includes('Rule') || rollResult.includes('Weekend')
-                        ? 'animate-holographic inline-block'
-                        : rollResult.includes('Edge')
-                        ? 'animate-purple-glow inline-block'
-                        : 'animate-failure-glow inline-block'
+                          ? 'animate-holographic inline-block'
+                          : rollResult.includes('Edge')
+                            ? 'animate-purple-glow inline-block'
+                            : 'animate-failure-glow inline-block'
                     }
                   >
                     {rollResult}
@@ -781,17 +792,16 @@ const RngTactician: React.FC = () => {
                   <div className="flex justify-center mt-4">
                     <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10">
                       <span
-                        className={`text-sm font-mono ${
-                          rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
+                        className={`text-sm font-mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
                             ? 'text-yellow-500 animate-warning-shake inline-block'
                             : 'text-red-400 animate-failure-pulse inline-block'
-                        }`}
+                          }`}
                       >
                         {rollResult.includes('Rule') || rollResult.includes('Weekend')
                           ? '⚠ SPECIAL CONDITION'
                           : rollResult.includes('Edge')
-                          ? '🎲 EDGE RESULT'
-                          : '✗ REJECTED'}
+                            ? '🎲 EDGE RESULT'
+                            : '✗ REJECTED'}
                       </span>
                     </div>
                   </div>
@@ -886,18 +896,18 @@ const RngTactician: React.FC = () => {
                 (step === 'ROLLED' && rollResult === 'Yes 🥵' && !multipleResult) ||
                 materials.length > 0 ||
                 multipleResult === 'No') && (
-                <button
-                  onClick={() => {
-                    setStep('IDLE');
-                    setRollResult('');
-                    setMaterials([]);
-                    setMultipleResult('');
-                  }}
-                  className="mt-8 text-zinc-500 hover:text-white text-sm underline underline-offset-4 transition-colors"
-                >
-                  Reset System
-                </button>
-              )}
+                  <button
+                    onClick={() => {
+                      setStep('IDLE');
+                      setRollResult('');
+                      setMaterials([]);
+                      setMultipleResult('');
+                    }}
+                    className="mt-8 text-zinc-500 hover:text-white text-sm underline underline-offset-4 transition-colors"
+                  >
+                    Reset System
+                  </button>
+                )}
             </div>
           )}
         </div>
