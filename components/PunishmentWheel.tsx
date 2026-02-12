@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { getPunishments, savePunishments, PunishmentOption, addPoints, PunishmentDifficulty, DIFFICULTY_POINTS, DIFFICULTY_COLORS, ITEM_IDS, hasItem, useFromInventory, addPointsWithMultiplier } from '../services/pointsService';
+import { getPunishments, savePunishments, addPoints, ensurePunishmentDifficulty, DIFFICULTY_POINTS, DIFFICULTY_COLORS, ITEM_IDS, hasItem, useFromInventory, addPointsWithMultiplier } from '../services/pointsService';
+import { PunishmentOption, PunishmentDifficulty } from '../types';
 
 interface PunishmentWheelProps {
   isOwner?: boolean;
+  forcedSupply?: string;
+  onComplete?: () => void;
 }
 
 // Difficulty icons helper
@@ -22,13 +25,14 @@ const DIFFICULTY_LABELS: Record<PunishmentDifficulty, string> = {
   extreme: 'Extreme',
 };
 
-const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) => {
+const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forcedSupply, onComplete }) => {
   const [punishments, setPunishments] = useState<PunishmentOption[]>([]);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState<PunishmentOption | null>(null);
   const [rotation, setRotation] = useState(0);
   const [editMode, setEditMode] = useState(false);
   const [newPunishment, setNewPunishment] = useState('');
+  const [newDescription, setNewDescription] = useState('');
   const [newDifficulty, setNewDifficulty] = useState<PunishmentDifficulty>('medium');
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [wasDoubled, setWasDoubled] = useState(false);
@@ -42,29 +46,29 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
 
   const spinWheel = () => {
     if (isSpinning || punishments.length === 0) return;
-    
+
     setIsSpinning(true);
     setResult(null);
     setSkipped(false);
     setWasDoubled(false);
-    
+
     const randomIndex = Math.floor(Math.random() * punishments.length);
     const segmentAngle = 360 / punishments.length;
     const targetAngle = 360 - (randomIndex * segmentAngle) - (segmentAngle / 2);
     const spins = 5 + Math.random() * 3;
     const finalRotation = rotation + (spins * 360) + targetAngle;
-    
+
     setRotation(finalRotation);
-    
+
     setTimeout(() => {
       const punishment = punishments[randomIndex];
       setResult(punishment);
       setIsSpinning(false);
-      
+
       // Check if player can skip this punishment
       const hasSkipItem = hasItem(ITEM_IDS.SKIP_PUNISHMENT);
       setCanSkip(hasSkipItem && punishment.difficulty !== 'free');
-      
+
       // Award points based on difficulty (with double points multiplier)
       const basePoints = DIFFICULTY_POINTS[punishment.difficulty] || 0;
       if (basePoints > 0) {
@@ -74,7 +78,7 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
       }
     }, 4000);
   };
-  
+
   const handleSkipPunishment = () => {
     if (useFromInventory(ITEM_IDS.SKIP_PUNISHMENT)) {
       setSkipped(true);
@@ -84,18 +88,20 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
 
   const handleAddPunishment = () => {
     if (!newPunishment.trim()) return;
-    
+
     const newOption: PunishmentOption = {
       id: Date.now().toString(),
       text: newPunishment.trim(),
+      description: newDescription.trim(),
       color: DIFFICULTY_COLORS[newDifficulty],
       difficulty: newDifficulty,
     };
-    
+
     const updated = [...punishments, newOption];
     setPunishments(updated);
     savePunishments(updated);
     setNewPunishment('');
+    setNewDescription('');
     setNewDifficulty('medium');
   };
 
@@ -118,9 +124,8 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
         {isOwner && (
           <button
             onClick={() => setEditMode(!editMode)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-            }`}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              }`}
           >
             {editMode ? '✕ Close Editor' : '⚙ Edit Options'}
           </button>
@@ -131,7 +136,7 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
       {isOwner && editMode && (
         <div className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4 animate-fade-in">
           <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Manage Punishments</h2>
-          
+
           {/* Add new */}
           <div className="flex flex-col gap-3">
             <input
@@ -139,6 +144,14 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
               value={newPunishment}
               onChange={(e) => setNewPunishment(e.target.value)}
               placeholder="Enter new punishment..."
+              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+              onKeyDown={(e) => e.key === 'Enter' && handleAddPunishment()}
+            />
+            <input
+              type="text"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Description (use {supply} for dynamic text)..."
               className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
               onKeyDown={(e) => e.key === 'Enter' && handleAddPunishment()}
             />
@@ -173,7 +186,8 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }} />
                   <span className="text-white text-sm">{p.text}</span>
-                  <span 
+                  {p.description && <span className="text-zinc-500 text-[10px] italic">({p.description.slice(0, 20)}...)</span>}
+                  <span
                     className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400"
                     title={DIFFICULTY_LABELS[p.difficulty]}
                   >
@@ -221,7 +235,7 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
                 const y2 = 100 + 95 * Math.sin(endRad);
                 const largeArc = segmentAngle > 180 ? 1 : 0;
                 const d = `M 100 100 L ${x1} ${y1} A 95 95 0 ${largeArc} 1 ${x2} ${y2} Z`;
-                
+
                 // Text position
                 const midAngle = (startAngle + segmentAngle / 2 - 90) * Math.PI / 180;
                 const textX = 100 + 60 * Math.cos(midAngle);
@@ -282,7 +296,7 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
       {result && (
         <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center space-y-4 animate-fade-in">
           <p className="text-zinc-400 uppercase tracking-widest text-xs">Your Punishment</p>
-          
+
           {skipped ? (
             <div className="space-y-3">
               <div className="text-4xl sm:text-5xl font-black py-4 text-zinc-600 line-through">
@@ -294,22 +308,28 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
               <p className="text-zinc-500 text-sm">You used a Skip Punishment item</p>
             </div>
           ) : (
-            <div 
+            <div
               className="text-4xl sm:text-5xl font-black py-4"
               style={{ color: result.color }}
             >
               {result.text}
             </div>
           )}
-          
+
+          {result.description && (
+            <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-zinc-300 text-sm italic">
+              " {result.description.replace('{supply}', forcedSupply || 'special equipment')} "
+            </div>
+          )}
+
           {pointsEarned && !skipped && (
             <p className="text-emerald-400 text-sm">
-              🎉 You earned <span className="font-bold">{pointsEarned}</span> points! 
+              🎉 You earned <span className="font-bold">{pointsEarned}</span> points!
               {wasDoubled && <span className="text-yellow-400 ml-2">(2x DOUBLED!)</span>}
               <span className="text-zinc-500 ml-2">({result.difficulty} difficulty)</span>
             </p>
           )}
-          
+
           {canSkip && !skipped && (
             <button
               onClick={handleSkipPunishment}
@@ -318,12 +338,17 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false }) =>
               🛡️ USE SKIP PUNISHMENT
             </button>
           )}
-          
+
           <button
-            onClick={() => { setResult(null); setCanSkip(false); setSkipped(false); }}
+            onClick={() => {
+              setResult(null);
+              setCanSkip(false);
+              setSkipped(false);
+              if (onComplete) onComplete();
+            }}
             className="text-zinc-500 hover:text-white text-sm underline underline-offset-4 transition-colors"
           >
-            Clear result
+            {forcedSupply ? 'Complete Punishment' : 'Clear result'}
           </button>
         </div>
       )}

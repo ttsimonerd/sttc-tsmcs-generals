@@ -1,5 +1,5 @@
 // Points Service - Manages user points and item effects
-import { ItemAction, ShopItem } from '../types';
+import { ItemAction, ShopItem, PunishmentDifficulty, PunishmentOption } from '../types';
 
 // Current user tracking
 const CURRENT_USER_KEY = 'current-user';
@@ -68,15 +68,6 @@ export const DEFAULT_VIP_CHOICE: ShopItem = {
   action: ItemAction.NONE,
 };
 
-export type PunishmentDifficulty = 'easy' | 'medium' | 'hard' | 'extreme' | 'free';
-
-export interface PunishmentOption {
-  id: string;
-  text: string;
-  color: string;
-  difficulty: PunishmentDifficulty;
-}
-
 // Points rewards based on difficulty
 export const DIFFICULTY_POINTS: Record<PunishmentDifficulty, number> = {
   free: 25,      // Free pass bonus
@@ -105,14 +96,14 @@ const DEFAULT_SHOP_ITEMS: ShopItem[] = [
 
 // Default punishment options with difficulty
 const DEFAULT_PUNISHMENTS: PunishmentOption[] = [
-  { id: '1', text: '10 Pushups', color: '#22c55e', difficulty: 'easy' },
-  { id: '2', text: 'No Phone 1hr', color: '#eab308', difficulty: 'medium' },
-  { id: '3', text: 'Cold Shower', color: '#f97316', difficulty: 'hard' },
-  { id: '4', text: 'Skip Lunch', color: '#f97316', difficulty: 'hard' },
-  { id: '5', text: 'Run 1 Mile', color: '#ef4444', difficulty: 'extreme' },
-  { id: '6', text: 'FREE PASS!', color: '#8b5cf6', difficulty: 'free' },
-  { id: '7', text: 'Edge 1 Hour', color: '#ef4444', difficulty: 'extreme' },
-  { id: '8', text: 'Drink Water Only', color: '#eab308', difficulty: 'medium' },
+  { id: '1', text: '10 Pushups', color: '#22c55e', difficulty: 'easy', description: 'Realiza 10 flexiones de pecho ahora mismo.' },
+  { id: '2', text: 'No Phone 1hr', color: '#eab308', difficulty: 'medium', description: 'No puedes usar tu teléfono durante la próxima hora.' },
+  { id: '3', text: 'Cold Shower', color: '#f97316', difficulty: 'hard', description: 'Toma una ducha de agua fría inmediatamente.' },
+  { id: '4', text: 'Skip Lunch', color: '#f97316', difficulty: 'hard', description: 'Debes saltarte el almuerzo de hoy.' },
+  { id: '5', text: 'Run 1 Mile', color: '#ef4444', difficulty: 'extreme', description: 'Sal a correr una milla (1.6 km) ahora.' },
+  { id: '6', text: 'FREE PASS!', color: '#8b5cf6', difficulty: 'free', description: '¡Has tenido suerte! Te has librado de un castigo.' },
+  { id: '7', text: 'Edge 1 Hour', color: '#ef4444', difficulty: 'extreme', description: 'Debes hacer el reto de Edge con {supply} durante 1 hora.' },
+  { id: '8', text: 'Drink Water Only', color: '#eab308', difficulty: 'medium', description: 'Solo puedes beber agua durante el resto del día.' },
 ];
 
 // Points functions

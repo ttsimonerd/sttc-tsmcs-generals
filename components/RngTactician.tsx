@@ -201,7 +201,12 @@ const RouletteWheel: React.FC<{
   );
 };
 
-const RngTactician: React.FC = () => {
+interface RngTacticianProps {
+  onRedirectionTriggered?: (supply: string) => void;
+  hideViews?: boolean;
+}
+
+const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered, hideViews }) => {
   const [step, setStep] = useState('IDLE' as Step);
   const [rollResult, setRollResult] = useState('');
   const [multipleResult, setMultipleResult] = useState('');
@@ -234,6 +239,11 @@ const RngTactician: React.FC = () => {
 
   // Double points timer display
   const [doublePointsTime, setDoublePointsTime] = useState(0);
+
+  // Punishment Redirection State
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(5);
+  const [redirectSupply, setRedirectSupply] = useState('');
 
   // Refresh stats on load or update
   const refreshStats = useCallback(() => {
@@ -302,11 +312,36 @@ const RngTactician: React.FC = () => {
     rollingResultRef.current = result;
   };
 
+  // Redirect Timer
+  useEffect(() => {
+    if (isRedirecting && redirectCountdown > 0) {
+      const timer = setTimeout(() => setRedirectCountdown(prev => prev - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (isRedirecting && redirectCountdown === 0) {
+      if (onRedirectionTriggered) {
+        onRedirectionTriggered(redirectSupply);
+        setIsRedirecting(false);
+      }
+    }
+  }, [isRedirecting, redirectCountdown, onRedirectionTriggered, redirectSupply]);
+
   const handleRollingComplete = (result: string) => {
     setIsRolling(false);
     setRollResult(result);
     setStep('ROLLED');
     refreshStats();
+
+    // 5% Probability check for punishment redirection
+    const isPunishmentRedirection = Math.random() < 0.05;
+    if (isPunishmentRedirection) {
+      // Get the supply that would have been awarded
+      const potentialSupply = getMaterials(1)[0].name;
+      setRedirectSupply(potentialSupply);
+      setIsRedirecting(true);
+      setStep('IDLE'); // Clear results to focus on warning
+      addToLog('SYSTEM INTERFERENCE DETECTED', 'error');
+      return;
+    }
 
     // Award points based on result (with double points multiplier)
     if (result.includes('Yes') && !result.includes('Edge')) {
@@ -448,8 +483,34 @@ const RngTactician: React.FC = () => {
     }
   };
 
+  if (hideViews) return null;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="space-y-8 max-w-4xl mx-auto px-4">
+      {/* Punishment Redirection Warning */}
+      {isRedirecting && (
+        <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in backdrop-blur-xl">
+          <div className="max-w-md w-full glass-panel p-8 border border-red-500/30 text-center space-y-6 relative overflow-hidden">
+            {/* Simple flickering background effect */}
+            <div className="absolute inset-0 bg-red-500/5 animate-pulse"></div>
+
+            <div className="relative z-10 space-y-4">
+              <span className="text-6xl animate-bounce inline-block">💀</span>
+              <h2 className="text-3xl font-black text-red-500 uppercase tracking-tighter">DISGRACED ONE</h2>
+              <p className="text-red-400 font-medium text-lg leading-tight uppercase">
+                You have to take a try on the <br />Punishment Roulette
+              </p>
+
+              <div className="pt-4 border-t border-red-500/20">
+                <p className="text-zinc-500 text-xs uppercase tracking-widest">Redirecting to the special roulette in</p>
+                <div className="text-5xl font-black text-white mt-1 animate-ping">
+                  {redirectCountdown}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="space-y-2 text-center">
         <h2 className="text-3xl font-bold text-white">The Arbiter</h2>
         <p className="text-zinc-400">Weekly Probability & Supply Allocation System.</p>
@@ -468,7 +529,7 @@ const RngTactician: React.FC = () => {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-zinc-400">Wins Acquired</span>
-                <span className={`font-mono font-bold ${weekData.yes_count >= 3 ? 'text-red-500' : 'text-emerald-400'}`}>
+                <span className={`font - mono font - bold ${weekData.yes_count >= 3 ? 'text-red-500' : 'text-emerald-400'} `}>
                   {weekData.yes_count} / 3
                 </span>
               </div>
@@ -514,7 +575,7 @@ const RngTactician: React.FC = () => {
                           : log.type === 'warning'
                             ? 'text-yellow-500'
                             : 'text-zinc-400'
-                        }`}
+                        } `}
                     >
                       {log.message}
                     </span>
@@ -526,14 +587,14 @@ const RngTactician: React.FC = () => {
 
           {/* The Redeemer Panel */}
           <div
-            className={`glass-panel p-6 rounded-2xl space-y-4 border relative overflow-hidden transition-all duration-500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
-              }`}
+            className={`glass - panel p - 6 rounded - 2xl space - y - 4 border relative overflow - hidden transition - all duration - 500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
+              } `}
           >
             {redeemerOpen && <div className="absolute inset-0 bg-red-900/5 pointer-events-none animate-pulse"></div>}
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-2">
                 <svg
-                  className={`w-5 h-5 ${redeemerOpen ? 'text-red-400 animate-pulse' : 'text-red-500'}`}
+                  className={`w - 5 h - 5 ${redeemerOpen ? 'text-red-400 animate-pulse' : 'text-red-500'} `}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -541,7 +602,7 @@ const RngTactician: React.FC = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
                 </svg>
-                <h3 className={`text-sm font-bold uppercase tracking-widest ${redeemerOpen ? 'text-red-300' : 'text-red-400'}`}>The Redeemer</h3>
+                <h3 className={`text - sm font - bold uppercase tracking - widest ${redeemerOpen ? 'text-red-300' : 'text-red-400'} `}>The Redeemer</h3>
               </div>
 
               {!redeemerOpen ? (
@@ -550,10 +611,10 @@ const RngTactician: React.FC = () => {
                   <button
                     onClick={handleSummonRedeemer}
                     disabled={weekData.yes_count < 3}
-                    className={`w-full py-2 border rounded-lg text-xs font-bold uppercase transition-all ${weekData.yes_count < 3
+                    className={`w - full py - 2 border rounded - lg text - xs font - bold uppercase transition - all ${weekData.yes_count < 3
                       ? 'bg-zinc-800 text-zinc-600 border-zinc-700 cursor-not-allowed'
                       : 'bg-red-500/10 hover:bg-red-500/30 text-red-400 border-red-500/50 hover:scale-[1.02]'
-                      }`}
+                      } `}
                   >
                     {weekData.yes_count < 3 ? 'Not Available (Need 3 Wins)' : 'Challenge Fate'}
                   </button>
@@ -577,10 +638,10 @@ const RngTactician: React.FC = () => {
                         <button
                           onClick={handleSubmitRedemption}
                           disabled={!userAnswer.trim()}
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${userAnswer.trim()
+                          className={`flex - 1 py - 2 rounded - lg text - xs font - bold uppercase transition - all ${userAnswer.trim()
                             ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]'
                             : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                            }`}
+                            } `}
                         >
                           Submit Answer
                         </button>
@@ -732,14 +793,14 @@ const RngTactician: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-zinc-400 uppercase tracking-widest text-xs animate-fade-in-up">Outcome</p>
                 <h2
-                  className={`text-6xl font-black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
+                  className={`text - 6xl font - black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
                     ? 'text-emerald-400 animate-success-pop'
                     : rollResult.includes('Rule') || rollResult.includes('Weekend')
                       ? 'text-yellow-500 animate-warning-pulse'
                       : rollResult.includes('Edge')
                         ? 'text-purple-400 animate-success-pop'
                         : 'text-red-500 animate-failure-shake'
-                    }`}
+                    } `}
                 >
                   <span
                     className={
@@ -763,7 +824,7 @@ const RngTactician: React.FC = () => {
                       <div
                         key={i}
                         className="w-2 h-2 bg-emerald-400 rounded-full animate-success-sparkle"
-                        style={{ animationDelay: `${i * 0.1}s`, animationDuration: '0.8s' }}
+                        style={{ animationDelay: `${i * 0.1} s`, animationDuration: '0.8s' }}
                       />
                     ))}
                   </div>
@@ -776,7 +837,7 @@ const RngTactician: React.FC = () => {
                       <div
                         key={i}
                         className="w-2 h-2 bg-purple-400 rounded-full animate-success-sparkle"
-                        style={{ animationDelay: `${i * 0.1}s`, animationDuration: '0.8s' }}
+                        style={{ animationDelay: `${i * 0.1} s`, animationDuration: '0.8s' }}
                       />
                     ))}
                   </div>
@@ -787,10 +848,10 @@ const RngTactician: React.FC = () => {
                   <div className="flex justify-center mt-4">
                     <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10">
                       <span
-                        className={`text-sm font-mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
+                        className={`text - sm font - mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
                           ? 'text-yellow-500 animate-warning-shake inline-block'
                           : 'text-red-400 animate-failure-pulse inline-block'
-                          }`}
+                          } `}
                       >
                         {rollResult.includes('Rule') || rollResult.includes('Weekend')
                           ? '⚠ SPECIAL CONDITION'
@@ -826,7 +887,7 @@ const RngTactician: React.FC = () => {
               {multipleResult && (
                 <div className="space-y-2 animate-fade-in">
                   <p className="text-zinc-400 text-sm">Multiple Result</p>
-                  <p className={`text-3xl font-bold ${multipleResult === 'Yes' ? 'text-emerald-400 animate-pop-in' : 'text-red-500 animate-shake'}`}>{multipleResult}</p>
+                  <p className={`text - 3xl font - bold ${multipleResult === 'Yes' ? 'text-emerald-400 animate-pop-in' : 'text-red-500 animate-shake'} `}>{multipleResult}</p>
                   {multipleResult === 'No' && <p className="text-zinc-500 text-sm italic">The Arbiter grants 1 consolation asset.</p>}
                 </div>
               )}
@@ -868,10 +929,10 @@ const RngTactician: React.FC = () => {
 
               {step === 'SHOW_MATERIALS' && materials.length > 0 && (
                 <div className="w-full space-y-6 animate-fade-in">
-                  <p className={`text-center font-mono text-sm ${supplyTitle.includes('CONSOLATION') ? 'text-yellow-500' : 'text-emerald-400'}`}>{supplyTitle}</p>
+                  <p className={`text - center font - mono text - sm ${supplyTitle.includes('CONSOLATION') ? 'text-yellow-500' : 'text-emerald-400'} `}>{supplyTitle}</p>
                   <div className="flex flex-wrap justify-center gap-4 max-h-[400px] overflow-y-auto custom-scrollbar p-2">
                     {materials.map((m, i) => (
-                      <div key={i} className="group relative flex flex-col items-center gap-2 p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300 min-w-[120px] animate-fade-in-up" style={{ animationDelay: `${i * 100}ms` }}>
+                      <div key={i} className="group relative flex flex-col items-center gap-2 p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300 min-w-[120px] animate-fade-in-up" style={{ animationDelay: `${i * 100} ms` }}>
                         <span className="text-5xl group-hover:scale-110 transition-transform duration-300">{m.icon || '🧪'}</span>
                         <span className="text-white font-bold text-sm">{m.name}</span>
                         {m.action && m.action !== ItemAction.NONE && (

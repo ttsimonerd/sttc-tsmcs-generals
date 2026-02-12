@@ -16,7 +16,7 @@ import RiddleEditor from './components/RiddleEditor';
 import GameTuner from './components/GameTuner';
 import SystemControl from './components/SystemControl';
 import ConfigExport from './components/ConfigExport';
-import { AppView, UserRole } from './types';
+import { AppView, UserRole, Material, ItemAction, PunishmentOption } from './types';
 import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
 // User credentials configuration
@@ -44,6 +44,9 @@ const App: React.FC = () => {
   const [error, setError] = useState('');
   const [currentView, setCurrentView] = useState<AppView>(AppView.RNG_TACTICIAN);
   const [broadcastMessage, setBroadcastMessage] = useState<string | null>(null);
+
+  // Punishment redirection state
+  const [punishmentRedirection, setPunishmentRedirection] = useState<{ active: boolean; supply: string } | null>(null);
 
   // Apply saved theme and listen for broadcasts
   useEffect(() => {
@@ -97,7 +100,11 @@ const App: React.FC = () => {
       case AppView.SLOT_MACHINE:
         return <SlotMachine />;
       case AppView.PUNISHMENT_WHEEL:
-        return <PunishmentWheel isOwner={userRole === 'Owner'} />;
+        return <PunishmentWheel
+          isOwner={userRole === 'Owner'}
+          forcedSupply={punishmentRedirection?.active ? punishmentRedirection.supply : undefined}
+          onComplete={() => setPunishmentRedirection(null)}
+        />;
       case AppView.SHOP:
         return <Shop isOwner={userRole === 'Owner'} />;
       case AppView.VIP_SUPPLIES:
@@ -188,7 +195,14 @@ const App: React.FC = () => {
           </div>
         )}
         <div className="max-w-7xl mx-auto pt-8">
-          {renderView()}
+          <RngTactician
+            onRedirectionTriggered={(supply) => {
+              setPunishmentRedirection({ active: true, supply });
+              setCurrentView(AppView.PUNISHMENT_WHEEL);
+            }}
+            hideViews={punishmentRedirection?.active}
+          />
+          {punishmentRedirection?.active ? null : renderView()}
         </div>
       </main>
 
