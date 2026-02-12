@@ -292,19 +292,6 @@ export const processItemAction = (action?: ItemAction | string, value: number = 
       return { success: true, message: `Acquired ${value} points!` };
 
     case ItemAction.GIVE_EXTRA_ROLL:
-      addToInventory(ITEM_IDS.EXTRA_ROLL, value || 1);
-      return { success: true, message: `Added ${value || 1} Extra Roll(s) to inventory!` };
-
-    case ItemAction.GIVE_SKIP_PUNISHMENT:
-      addToInventory(ITEM_IDS.SKIP_PUNISHMENT, value || 1);
-      return { success: true, message: `Added ${value || 1} Skip Punishment(s) to inventory!` };
-
-    case ItemAction.DOUBLE_POINTS_BUFF:
-    case 'DOUBLE_POINTS': // Legacy support
-      activateDoublePoints();
-      return { success: true, message: 'Double Points activated for 1 hour!' };
-
-    case ItemAction.GIVE_EXTRA_ROLL:
     case 'EXTRA_ROLL': // Legacy support
       addToInventory(ITEM_IDS.EXTRA_ROLL, value || 1);
       return { success: true, message: `Added ${value || 1} Extra Roll(s) to inventory!` };
@@ -314,15 +301,19 @@ export const processItemAction = (action?: ItemAction | string, value: number = 
       addToInventory(ITEM_IDS.SKIP_PUNISHMENT, value || 1);
       return { success: true, message: `Added ${value || 1} Skip Punishment(s) to inventory!` };
 
-    case ItemAction.GRANT_VIP:
-    case 'GRANT_VIP': // Legacy support
+    case ItemAction.DOUBLE_POINTS_BUFF:
+    case 'DOUBLE_POINTS': // Legacy support
+      activateDoublePoints();
+      return { success: true, message: 'Double Points activated for 1 hour!' };
 
-    case ItemAction.RANDOM_POINTS_BOX:
+    case ItemAction.RANDOM_POINTS_BOX: {
       const reward = openMysteryBox();
       addPoints(reward);
       return { success: true, message: `Opened mystery box and found ${reward} points!` };
+    }
 
     case ItemAction.GRANT_VIP:
+    case 'GRANT_VIP': // Legacy support
       if (hasVipBadge()) return { success: false, message: 'You already own the VIP Badge!' };
       grantVipBadge();
       return { success: true, message: "VIP Badge acquired! You're now a VIP!" };

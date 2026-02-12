@@ -148,24 +148,35 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       return;
     }
 
-    // Deduct points
-    if (!spendPoints(item.price)) {
-      showNotif("Not enough points!", 'error');
-      return;
-    }
-
-    // Process action if defined
+    // Process action if defined — check feasibility BEFORE spending points
     if (item.action && item.action !== ItemAction.NONE) {
+      // Pre-check: for VIP, verify they don't already own it
+      if (item.action === ItemAction.GRANT_VIP && hasVipBadge()) {
+        showNotif("You already own the VIP Badge!", 'error');
+        return;
+      }
+
+      // Now deduct points
+      if (!spendPoints(item.price)) {
+        showNotif("Not enough points!", 'error');
+        return;
+      }
+
       const { success, message } = processItemAction(item.action, item.actionValue);
       if (success) {
         showNotif(message || `Purchased ${item.name}!`, 'success');
       } else {
-        showNotif(message || "Transaction failed!", 'error');
-        // Points are already spent, maybe we should refund? 
-        // For now assume if it failed (like already having VIP), the service handled it or we just show error.
+        // Refund points if action failed
+        addPoints(item.price);
+        showNotif(message || "Transaction failed! Points refunded.", 'error');
         return;
       }
     } else {
+      // Regular purchase — deduct points first
+      if (!spendPoints(item.price)) {
+        showNotif("Not enough points!", 'error');
+        return;
+      }
       // Regular purchase for custom items (with no specific functional action)
       addPurchasedItem(item.id);
       setPurchasedItems([...purchasedItems, item.id]);

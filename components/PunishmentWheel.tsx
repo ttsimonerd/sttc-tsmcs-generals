@@ -362,10 +362,10 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
               setSkipped(false);
               if (onComplete) onComplete();
             }}
-            disabled={forcedSupply && !result}
+            disabled={!!forcedSupply && !skipped}
             className="text-zinc-500 hover:text-white text-sm underline underline-offset-4 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            {forcedSupply ? 'Complete Punishment' : 'Clear result'}
+            {forcedSupply ? (skipped ? 'Return to Arbiter' : 'Complete Punishment') : 'Clear result'}
           </button>
         </div>
       )}

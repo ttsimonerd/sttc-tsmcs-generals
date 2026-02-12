@@ -133,7 +133,7 @@ const App: React.FC = () => {
       case AppView.CONFIG_EXPORT:
         return ownerOnly(<ConfigExport />);
       default:
-        return <RngTactician />;
+        return <RngTactician onRedirectionTriggered={redirectionHandler} />;
     }
   };
 

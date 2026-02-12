@@ -24,26 +24,29 @@ const Inventory: React.FC = () => {
     const handleUseItem = (itemId: string) => {
         const item = shopItems.find(i => i.id === itemId);
 
-        // If item details not found (removed from shop), we might need a fallback, 
-        // but for now let's assume valid items or just show ID.
-
-        if (useFromInventory(itemId)) {
-            // Inventory consumed, now trigger effect
-            if (item && item.action && item.action !== ItemAction.NONE) {
-                const { success, message } = processItemAction(item.action, item.actionValue);
-                if (success) {
-                    showNotif(message || `Used ${item.name}!`, 'success');
-                } else {
-                    showNotif(message || "Failed to use item.", 'error');
-                    // Note: We consumed the item. In a real app we might refund if action failed.
-                }
-            } else {
-                showNotif(`Used ${item?.name || 'Item'} (No effect defined)`, 'success');
-            }
-            refreshData();
-        } else {
-            showNotif("Failed to use item (Maybe out of stock?)", 'error');
+        // Check if we even have the item
+        if (!getInventoryCount(itemId)) {
+            showNotif("Failed to use item (not in inventory)", 'error');
+            return;
         }
+
+        // If item has an action, try it BEFORE consuming
+        if (item && item.action && item.action !== ItemAction.NONE) {
+            const { success, message } = processItemAction(item.action, item.actionValue);
+            if (success) {
+                // Action succeeded — now consume from inventory
+                useFromInventory(itemId);
+                showNotif(message || `Used ${item.name}!`, 'success');
+            } else {
+                // Action failed — do NOT consume the item
+                showNotif(message || "Failed to use item.", 'error');
+            }
+        } else {
+            // No action defined — just consume it
+            useFromInventory(itemId);
+            showNotif(`Used ${item?.name || 'Item'} (No effect defined)`, 'success');
+        }
+        refreshData();
     };
 
     // Filter shop items to only those we have in inventory

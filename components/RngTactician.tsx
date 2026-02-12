@@ -387,7 +387,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
       const todaysSupply = getMaterials(1);
       setMaterials(todaysSupply);
       setSupplyTitle("-- TODAY'S SUPPLY --");
-      addToLog(`${todaysSupply[0]}`, 'neutral');
+      addToLog(`${todaysSupply[0].icon || '🧪'} ${todaysSupply[0].name}`, 'neutral');
       setStep('SHOW_MATERIALS');
       return;
     }
@@ -401,7 +401,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
       const consolationSupply = getMaterials(1);
       setMaterials(consolationSupply);
       setSupplyTitle('-- CONSOLATION SUPPLY (1) --');
-      addToLog(`${consolationSupply[0]}`, 'error');
+      addToLog(`${consolationSupply[0].icon || '🧪'} ${consolationSupply[0].name}`, 'error');
       setStep('SHOW_MATERIALS');
     }
   };
@@ -542,7 +542,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-zinc-400">Wins Acquired</span>
-                <span className={`font - mono font - bold ${weekData.yes_count >= 3 ? 'text-red-500' : 'text-emerald-400'} `}>
+                <span className={`font-mono font-bold ${weekData.yes_count >= 3 ? 'text-red-500' : 'text-emerald-400'}`}>
                   {weekData.yes_count} / 3
                 </span>
               </div>
@@ -600,14 +600,14 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
           {/* The Redeemer Panel */}
           <div
-            className={`glass - panel p - 6 rounded - 2xl space - y - 4 border relative overflow - hidden transition - all duration - 500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
-              } `}
+            className={`glass-panel p-6 rounded-2xl space-y-4 border relative overflow-hidden transition-all duration-500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
+              }`}
           >
             {redeemerOpen && <div className="absolute inset-0 bg-red-900/5 pointer-events-none animate-pulse"></div>}
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-2">
                 <svg
-                  className={`w - 5 h - 5 ${redeemerOpen ? 'text-red-400 animate-pulse' : 'text-red-500'} `}
+                  className={`w-5 h-5 ${redeemerOpen ? 'text-red-400 animate-pulse' : 'text-red-500'}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -615,7 +615,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
                 </svg>
-                <h3 className={`text - sm font - bold uppercase tracking - widest ${redeemerOpen ? 'text-red-300' : 'text-red-400'} `}>The Redeemer</h3>
+                <h3 className={`text-sm font-bold uppercase tracking-widest ${redeemerOpen ? 'text-red-300' : 'text-red-400'}`}>The Redeemer</h3>
               </div>
 
               {!redeemerOpen ? (
@@ -624,10 +624,10 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                   <button
                     onClick={handleSummonRedeemer}
                     disabled={weekData.yes_count < 3}
-                    className={`w - full py - 2 border rounded - lg text - xs font - bold uppercase transition - all ${weekData.yes_count < 3
+                    className={`w-full py-2 border rounded-lg text-xs font-bold uppercase transition-all ${weekData.yes_count < 3
                       ? 'bg-zinc-800 text-zinc-600 border-zinc-700 cursor-not-allowed'
                       : 'bg-red-500/10 hover:bg-red-500/30 text-red-400 border-red-500/50 hover:scale-[1.02]'
-                      } `}
+                      }`}
                   >
                     {weekData.yes_count < 3 ? 'Not Available (Need 3 Wins)' : 'Challenge Fate'}
                   </button>
@@ -651,10 +651,10 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                         <button
                           onClick={handleSubmitRedemption}
                           disabled={!userAnswer.trim()}
-                          className={`flex - 1 py - 2 rounded - lg text - xs font - bold uppercase transition - all ${userAnswer.trim()
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold uppercase transition-all ${userAnswer.trim()
                             ? 'bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_rgba(220,38,38,0.4)]'
                             : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
-                            } `}
+                            }`}
                         >
                           Submit Answer
                         </button>
@@ -806,14 +806,14 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
               <div className="space-y-2">
                 <p className="text-zinc-400 uppercase tracking-widest text-xs animate-fade-in-up">Outcome</p>
                 <h2
-                  className={`text - 6xl font - black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
+                  className={`text-6xl font-black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
                     ? 'text-emerald-400 animate-success-pop'
                     : rollResult.includes('Rule') || rollResult.includes('Weekend')
                       ? 'text-yellow-500 animate-warning-pulse'
                       : rollResult.includes('Edge')
                         ? 'text-purple-400 animate-success-pop'
                         : 'text-red-500 animate-failure-shake'
-                    } `}
+                    }`}
                 >
                   <span
                     className={
@@ -861,10 +861,10 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                   <div className="flex justify-center mt-4">
                     <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10">
                       <span
-                        className={`text - sm font - mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
+                        className={`text-sm font-mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
                           ? 'text-yellow-500 animate-warning-shake inline-block'
                           : 'text-red-400 animate-failure-pulse inline-block'
-                          } `}
+                          }`}
                       >
                         {rollResult.includes('Rule') || rollResult.includes('Weekend')
                           ? '⚠ SPECIAL CONDITION'
@@ -900,7 +900,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
               {multipleResult && (
                 <div className="space-y-2 animate-fade-in">
                   <p className="text-zinc-400 text-sm">Multiple Result</p>
-                  <p className={`text - 3xl font - bold ${multipleResult === 'Yes' ? 'text-emerald-400 animate-pop-in' : 'text-red-500 animate-shake'} `}>{multipleResult}</p>
+                  <p className={`text-3xl font-bold ${multipleResult === 'Yes' ? 'text-emerald-400 animate-pop-in' : 'text-red-500 animate-shake'}`}>{multipleResult}</p>
                   {multipleResult === 'No' && <p className="text-zinc-500 text-sm italic">The Arbiter grants 1 consolation asset.</p>}
                 </div>
               )}
@@ -942,7 +942,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
               {step === 'SHOW_MATERIALS' && materials.length > 0 && (
                 <div className="w-full space-y-6 animate-fade-in">
-                  <p className={`text - center font - mono text - sm ${supplyTitle.includes('CONSOLATION') ? 'text-yellow-500' : 'text-emerald-400'} `}>{supplyTitle}</p>
+                  <p className={`text-center font-mono text-sm ${supplyTitle.includes('CONSOLATION') ? 'text-yellow-500' : 'text-emerald-400'}`}>{supplyTitle}</p>
                   <div className="flex flex-wrap justify-center gap-4 max-h-[400px] overflow-y-auto custom-scrollbar p-2">
                     {materials.map((m, i) => (
                       <div key={i} className="group relative flex flex-col items-center gap-2 p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300 min-w-[120px] animate-fade-in-up" style={{ animationDelay: `${i * 100} ms` }}>
