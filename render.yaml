@@ -1,0 +1,6 @@
+services:
+  - type: static
+    name: tsmc-s-generals
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
