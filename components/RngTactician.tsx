@@ -330,18 +330,21 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
     setStep('ROLLED');
     refreshStats();
 
-    // Read punishment redirection probability from config (default 5%)
-    const probConfig = JSON.parse(localStorage.getItem('probability_config') || '{}');
-    const redirectionProbability = (probConfig.punishmentRedirectionProb ?? 5) / 100;
-    const isPunishmentRedirection = Math.random() < redirectionProbability;
-    if (isPunishmentRedirection) {
-      // Get the supply that would have been awarded
-      const potentialSupply = getMaterials(1)[0].name;
-      setRedirectSupply(potentialSupply);
-      setIsRedirecting(true);
-      setStep('IDLE'); // Clear results to focus on warning
-      addToLog('SYSTEM INTERFERENCE DETECTED', 'error');
-      return;
+    // Punishment redirection only happens on "Yes" results (not No or Edge)
+    if (result.includes('Yes') && !result.includes('Edge')) {
+      // Read punishment redirection probability from config (default 5%)
+      const probConfig = JSON.parse(localStorage.getItem('probability_config') || '{}');
+      const redirectionProbability = (probConfig.punishmentRedirectionProb ?? 5) / 100;
+      const isPunishmentRedirection = Math.random() < redirectionProbability;
+      if (isPunishmentRedirection) {
+        // Get the supply that would have been awarded
+        const potentialSupply = getMaterials(1)[0].name;
+        setRedirectSupply(potentialSupply);
+        setIsRedirecting(true);
+        setStep('IDLE'); // Clear results to focus on warning
+        addToLog('SYSTEM INTERFERENCE DETECTED', 'error');
+        return;
+      }
     }
 
     // Award points based on result (with double points multiplier)
