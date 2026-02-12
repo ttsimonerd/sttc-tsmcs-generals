@@ -2,7 +2,7 @@
 
 This guide explains how to use the Master Control configuration files and how to make your adjustments permanent in the project codebase.
 
-## 📥 Importing Configuration
+## 📥 Importing Configuration (NOT PERMANENT)
 1.  Log in as **Owner**.
 2.  Click the red **SOLIDIFY CONFIG** button at the bottom of the sidebar.
 3.  Click **UPLOAD SNAPSHOT** and select your `.json` configuration file.
