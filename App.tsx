@@ -81,12 +81,17 @@ const App: React.FC = () => {
   };
 
   const renderView = () => {
+    const redirectionHandler = (supply: string) => {
+      setPunishmentRedirection({ active: true, supply });
+      setCurrentView(AppView.PUNISHMENT_WHEEL);
+    };
+
     // Helper to ensure only Owner can see management views
-    const ownerOnly = (component: React.ReactNode) => userRole === 'Owner' ? component : <RngTactician />;
+    const ownerOnly = (component: React.ReactNode) => userRole === 'Owner' ? component : <RngTactician onRedirectionTriggered={redirectionHandler} />;
 
     switch (currentView) {
       case AppView.RNG_TACTICIAN:
-        return <RngTactician />;
+        return <RngTactician onRedirectionTriggered={redirectionHandler} />;
       case AppView.DATABASE:
         return ownerOnly(<DatabaseRegistry />);
       case AppView.PROBABILITIES:
@@ -195,14 +200,7 @@ const App: React.FC = () => {
           </div>
         )}
         <div className="max-w-7xl mx-auto pt-8">
-          <RngTactician
-            onRedirectionTriggered={(supply) => {
-              setPunishmentRedirection({ active: true, supply });
-              setCurrentView(AppView.PUNISHMENT_WHEEL);
-            }}
-            hideViews={punishmentRedirection?.active}
-          />
-          {punishmentRedirection?.active ? null : renderView()}
+          {renderView()}
         </div>
       </main>
 

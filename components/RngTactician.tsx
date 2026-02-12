@@ -203,10 +203,9 @@ const RouletteWheel: React.FC<{
 
 interface RngTacticianProps {
   onRedirectionTriggered?: (supply: string) => void;
-  hideViews?: boolean;
 }
 
-const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered, hideViews }) => {
+const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) => {
   const [step, setStep] = useState('IDLE' as Step);
   const [rollResult, setRollResult] = useState('');
   const [multipleResult, setMultipleResult] = useState('');
@@ -483,7 +482,6 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered, hid
     }
   };
 
-  if (hideViews) return null;
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto px-4">
