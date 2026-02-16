@@ -1,5 +1,5 @@
 // Points Service - Manages user points and item effects
-import { ItemAction, ShopItem, PunishmentDifficulty, PunishmentOption } from '../types';
+import { ItemAction, ShopItem, PunishmentOption } from '../types';
 
 // Current user tracking
 const CURRENT_USER_KEY = 'current-user';
@@ -68,42 +68,26 @@ export const DEFAULT_VIP_CHOICE: ShopItem = {
   action: ItemAction.NONE,
 };
 
-// Points rewards based on difficulty
-export const DIFFICULTY_POINTS: Record<PunishmentDifficulty, number> = {
-  free: 25,      // Free pass bonus
-  easy: 5,       // Easy punishment
-  medium: 10,    // Medium punishment
-  hard: 20,      // Hard punishment
-  extreme: 35,   // Extreme punishment
-};
-
-export const DIFFICULTY_COLORS: Record<PunishmentDifficulty, string> = {
-  free: '#8b5cf6',    // Purple
-  easy: '#22c55e',    // Green
-  medium: '#eab308',  // Yellow
-  hard: '#f97316',    // Orange
-  extreme: '#ef4444', // Red
-};
-
 // Default shop items
 const DEFAULT_SHOP_ITEMS: ShopItem[] = [
   { id: '1', name: 'Extra Roll', description: 'Get one extra roll today', price: 50, icon: '🎲', stock: -1, action: ItemAction.GIVE_EXTRA_ROLL, actionValue: 1 },
-  { id: '2', name: 'Skip Punishment', description: 'Avoid one punishment', price: 100, icon: '🛡️', stock: -1, action: ItemAction.GIVE_SKIP_PUNISHMENT, actionValue: 1 },
   { id: '3', name: 'Double Points', description: 'Double points for 1 hour', price: 200, icon: '✨', stock: -1, action: ItemAction.DOUBLE_POINTS_BUFF, actionValue: 3600 },
   { id: '4', name: 'Mystery Box', description: 'Random reward inside', price: 75, icon: '📦', stock: 10, action: ItemAction.RANDOM_POINTS_BOX },
   { id: '5', name: 'VIP Badge', description: 'Show off your status', price: 500, icon: '👑', stock: 5, action: ItemAction.GRANT_VIP },
 ];
 
-// Default punishment options with difficulty
+// Default punishment options
+const PUNISHMENT_COLORS = ['#dc2626', '#ea580c', '#d97706', '#65a30d', '#0891b2', '#7c3aed', '#db2777'];
+
 const DEFAULT_PUNISHMENTS: PunishmentOption[] = [
-  { id: '1', text: '10 Pushups', color: '#22c55e', difficulty: 'easy', description: 'Realiza 10 flexiones de pecho ahora mismo.' },
-  { id: '2', text: 'No Phone 1hr', color: '#eab308', difficulty: 'medium', description: 'No puedes usar tu teléfono durante la próxima hora.' },
-  { id: '3', text: 'Cold Shower', color: '#f97316', difficulty: 'hard', description: 'Toma una ducha de agua fría inmediatamente.' },
-  { id: '4', text: 'Skip Lunch', color: '#f97316', difficulty: 'hard', description: 'Debes saltarte el almuerzo de hoy.' },
-  { id: '5', text: 'Run 1 Mile', color: '#ef4444', difficulty: 'extreme', description: 'Sal a correr una milla (1.6 km) ahora.' },
-  { id: '6', text: 'FREE PASS!', color: '#8b5cf6', difficulty: 'free', description: '¡Has tenido suerte! Te has librado de un castigo.' },
-  { id: '7', text: 'Edge 1 Hour', color: '#ef4444', difficulty: 'extreme', description: 'Debes hacer el reto de Edge con {supply} durante 1 hora.' },
-  { id: '8', text: 'Drink Water Only', color: '#eab308', difficulty: 'medium', description: 'Solo puedes beber agua durante el resto del día.' },
+  { id: '1', text: '10 Pushups', color: PUNISHMENT_COLORS[0 % PUNISHMENT_COLORS.length], description: 'Realiza 10 flexiones de pecho ahora mismo.' },
+  { id: '2', text: 'No Phone 1hr', color: PUNISHMENT_COLORS[1 % PUNISHMENT_COLORS.length], description: 'No puedes usar tu teléfono durante la próxima hora.' },
+  { id: '3', text: 'Cold Shower', color: PUNISHMENT_COLORS[2 % PUNISHMENT_COLORS.length], description: 'Toma una ducha de agua fría inmediatamente.' },
+  { id: '4', text: 'Skip Lunch', color: PUNISHMENT_COLORS[3 % PUNISHMENT_COLORS.length], description: 'Debes saltarte el almuerzo de hoy.' },
+  { id: '5', text: 'Run 1 Mile', color: PUNISHMENT_COLORS[4 % PUNISHMENT_COLORS.length], description: 'Sal a correr una milla (1.6 km) ahora.' },
+  { id: '6', text: 'FREE PASS!', color: PUNISHMENT_COLORS[5 % PUNISHMENT_COLORS.length], description: '¡Has tenido suerte! Te has librado de un castigo.' },
+  { id: '7', text: 'Edge 1 Hour', color: PUNISHMENT_COLORS[6 % PUNISHMENT_COLORS.length], description: 'Debes hacer el reto de Edge con {supply} durante 1 hora.' },
+  { id: '8', text: 'Drink Water Only', color: PUNISHMENT_COLORS[0 % PUNISHMENT_COLORS.length], description: 'Solo puedes beber agua durante el resto del día.' },
 ];
 
 // Points functions
@@ -161,8 +145,7 @@ export const addPurchasedItem = (itemId: string): void => {
 // Punishment functions
 export const getPunishments = (): PunishmentOption[] => {
   const stored = localStorage.getItem(PUNISHMENTS_KEY);
-  const punishments = stored ? JSON.parse(stored) : DEFAULT_PUNISHMENTS;
-  return ensurePunishmentDifficulty(punishments);
+  return stored ? JSON.parse(stored) : DEFAULT_PUNISHMENTS;
 };
 
 export const savePunishments = (punishments: PunishmentOption[]): void => {
@@ -221,14 +204,6 @@ export const saveVipSupplies = (supplies: string[]): void => {
 
 export const resetVipSupplies = (): void => {
   localStorage.setItem(VIP_SUPPLIES_KEY, JSON.stringify(DEFAULT_VIP_SUPPLIES));
-};
-
-// Helper function to ensure punishments have difficulty
-export const ensurePunishmentDifficulty = (punishments: PunishmentOption[]): PunishmentOption[] => {
-  return punishments.map(p => ({
-    ...p,
-    difficulty: p.difficulty || 'medium' // Default to medium if missing
-  }));
 };
 
 // ==========================================

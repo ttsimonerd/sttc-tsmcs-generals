@@ -22,13 +22,10 @@ export type UserRole = 'Owner' | 'Gooner 💔🥀' | 'Migueeeel [Beta Tester]';
 
 export type Rarity = 'COMMON' | 'RARE' | 'EPIC' | 'LEGENDARY';
 
-export type PunishmentDifficulty = 'easy' | 'medium' | 'hard' | 'extreme' | 'free';
-
 export interface PunishmentOption {
   id: string;
   text: string;
   color: string;
-  difficulty: PunishmentDifficulty;
   description?: string;
 }
 

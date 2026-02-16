@@ -181,22 +181,6 @@ const UserManagement: React.FC = () => {
                                         <button onClick={() => updateInventory(ITEM_IDS.EXTRA_ROLL, true)} className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 text-white">+</button>
                                     </div>
                                 </div>
-
-                                {/* Skip Punishment */}
-                                <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl">🛡️</span>
-                                        <div>
-                                            <p className="text-white text-sm font-medium">Skip Punishment</p>
-                                            <p className="text-zinc-500 text-xs">Consumable items</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => updateInventory(ITEM_IDS.SKIP_PUNISHMENT, false)} className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 text-white">-</button>
-                                        <span className="text-white font-bold w-4 text-center">{userData.inventory[ITEM_IDS.SKIP_PUNISHMENT] || 0}</span>
-                                        <button onClick={() => updateInventory(ITEM_IDS.SKIP_PUNISHMENT, true)} className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 text-white">+</button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>

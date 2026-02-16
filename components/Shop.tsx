@@ -68,7 +68,6 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
   const refreshInventory = () => {
     setInventoryCounts({
       [ITEM_IDS.EXTRA_ROLL]: getInventoryCount(ITEM_IDS.EXTRA_ROLL),
-      [ITEM_IDS.SKIP_PUNISHMENT]: getInventoryCount(ITEM_IDS.SKIP_PUNISHMENT),
     });
     setDoublePointsTime(getDoublePointsRemaining());
   };
@@ -278,7 +277,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       )}
 
       {/* Active Effects Banner */}
-      {(doublePointsTime > 0 || inventoryCounts[ITEM_IDS.EXTRA_ROLL] > 0 || inventoryCounts[ITEM_IDS.SKIP_PUNISHMENT] > 0 || hasVipBadge()) && (
+      {(doublePointsTime > 0 || inventoryCounts[ITEM_IDS.EXTRA_ROLL] > 0 || hasVipBadge()) && (
         <div className="glass-panel p-4 rounded-xl border border-purple-500/20 space-y-2">
           <h3 className="text-xs font-bold text-purple-400 uppercase tracking-widest">Active Effects & Inventory</h3>
           <div className="flex flex-wrap gap-3">
@@ -294,12 +293,6 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
               <div className="px-3 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg flex items-center gap-2">
                 <span>🎲</span>
                 <span className="text-blue-400 text-sm font-medium">Extra Rolls: {inventoryCounts[ITEM_IDS.EXTRA_ROLL]}</span>
-              </div>
-            )}
-            {inventoryCounts[ITEM_IDS.SKIP_PUNISHMENT] > 0 && (
-              <div className="px-3 py-2 bg-red-500/20 border border-red-500/30 rounded-lg flex items-center gap-2">
-                <span>🛡️</span>
-                <span className="text-red-400 text-sm font-medium">Skip Punishment: {inventoryCounts[ITEM_IDS.SKIP_PUNISHMENT]}</span>
               </div>
             )}
             {hasVipBadge() && (
