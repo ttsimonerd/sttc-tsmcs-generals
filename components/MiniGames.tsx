@@ -76,9 +76,9 @@ const MiniGames: React.FC<MiniGamesProps> = ({ onSelectGame }) => {
 
     setTimeout(() => {
       const result = Math.random() < 0.5 ? 'Heads' : 'Tails';
-      const userChoice = Math.random() < 0.5 ? 'Heads' : 'Tails';
+      const isWin = result === 'Heads';
       
-      if (result === userChoice) {
+      if (isWin) {
         const baseWinnings = betAmount * 2;
         const { doubled } = addPointsWithMultiplier(baseWinnings);
         const finalWinnings = doubled ? baseWinnings * 2 : baseWinnings;

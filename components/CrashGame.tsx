@@ -159,7 +159,7 @@ const CrashGame: React.FC = () => {
           )}
         </div>
 
-        <div className="h-4 bg-zinc-800 rounded-full overflow-hidden">
+        <div className="h-4 bg-zinc-800 rounded-full overflow-hidden relative">
           <div
             className={`absolute left-0 top-0 h-full transition-all duration-75 rounded-full ${multiplier < 2 ? 'bg-zinc-500' :
                 multiplier < 5 ? 'bg-emerald-500' :

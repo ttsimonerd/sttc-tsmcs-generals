@@ -90,7 +90,7 @@ const ConfigExport: React.FC = () => {
                         </p>
                     </div>
                     <label className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-600/20 cursor-pointer flex items-center justify-center gap-2 group">
-                        {isImporting ? 'PROCESING...' : 'UPLOAD SNAPSHOT'}
+                        {isImporting ? 'PROCESSING...' : 'UPLOAD SNAPSHOT'}
                         {!isImporting && <span className="group-hover:-translate-y-1 transition-transform">↑</span>}
                         <input type="file" accept=".json" onChange={handleFileChange} className="hidden" disabled={isImporting} />
                     </label>

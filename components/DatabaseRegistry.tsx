@@ -11,7 +11,8 @@ const DatabaseRegistry: React.FC = () => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      setData(parsed.join(', '));
+      const names = parsed.map((item: any) => typeof item === 'string' ? item : item.name);
+      setData(names.join(', '));
     } else {
       setData(MATERIALS_LIST.join(', '));
     }
@@ -32,7 +33,7 @@ const DatabaseRegistry: React.FC = () => {
       return;
     }
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newList.map(name => ({ name }))));
     
     // Dispatch a custom event to notify services of the change
     window.dispatchEvent(new Event('materials-updated'));

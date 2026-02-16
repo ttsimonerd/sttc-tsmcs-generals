@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { addPoints, getPoints, addPointsWithMultiplier } from '../services/pointsService';
+import { addPoints, getPoints, addPointsWithMultiplier, spendPoints } from '../services/pointsService';
 import confetti from 'canvas-confetti';
 
 interface SlotSymbol {
@@ -66,8 +66,8 @@ const SlotMachine: React.FC = () => {
     } else if (points < config.spinCost) {
       return;
     } else {
-      const newPoints = getPoints() - config.spinCost;
-      setPoints(newPoints);
+      spendPoints(config.spinCost);
+      setPoints(getPoints());
     }
 
     setIsSpinning(true);
