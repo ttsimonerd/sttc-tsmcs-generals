@@ -108,16 +108,24 @@ export const getWeekendMessage = (): string => {
   return DEFAULT_WEEKEND_RESTRICTION.message;
 };
 
+// Normalize stored materials - handles both string[] and Material[] formats
+const loadMaterialsList = (): Material[] => {
+  const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
+  if (!stored) return MATERIALS_LIST.map(name => ({ name }));
+
+  const parsed = JSON.parse(stored);
+  if (!Array.isArray(parsed) || parsed.length === 0) return MATERIALS_LIST.map(name => ({ name }));
+
+  return parsed.map((item: any) =>
+    typeof item === 'string' ? { name: item } : item
+  );
+};
+
 // Generate random Edge message and return the supply as well
 export const generateEdgeMessage = (): { message: string; supply: Material } => {
   const randomDays = Math.floor(Math.random() * 7) + 1; // 1-7 days
 
-  // Get a random material from the list
-  const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
-  const sourceList: Material[] = stored
-    ? JSON.parse(stored)
-    : MATERIALS_LIST.map(name => ({ name }));
-
+  const sourceList = loadMaterialsList();
   const randomMaterial = sourceList.length > 0
     ? sourceList[Math.floor(Math.random() * sourceList.length)]
     : { name: 'special supply' };
@@ -168,12 +176,7 @@ export const checkMultiple = (): string => {
 
 export const getMaterials = (num: number): Material[] => {
   const selected: Material[] = [];
-
-  // Try to load from dynamic registry first
-  const stored = localStorage.getItem(MATERIALS_STORAGE_KEY);
-  const sourceList: Material[] = stored
-    ? JSON.parse(stored)
-    : MATERIALS_LIST.map(name => ({ name }));
+  const sourceList = loadMaterialsList();
 
   for (let i = 0; i < num; i++) {
     if (sourceList.length === 0) break;
