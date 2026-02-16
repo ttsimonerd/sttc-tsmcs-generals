@@ -369,7 +369,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
       // Better: let's extract the name and find it in the registry or just create a temporary one.
       const edgeSupplyName = getEdgeSupply(result);
-      const tempMaterial: Material = { name: edgeSupplyName, icon: '🧪' };
+      const tempMaterial: Material = { name: edgeSupplyName };
 
       // Actually, let's just use the name extracted for now. 
       // In a real scenario, we'd want the full object.
@@ -387,7 +387,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
       const todaysSupply = getMaterials(1);
       setMaterials(todaysSupply);
       setSupplyTitle("-- TODAY'S SUPPLY --");
-      addToLog(`${todaysSupply[0].icon || '🧪'} ${todaysSupply[0].name}`, 'neutral');
+      addToLog(todaysSupply[0].name, 'neutral');
       setStep('SHOW_MATERIALS');
       return;
     }
@@ -401,7 +401,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
       const consolationSupply = getMaterials(1);
       setMaterials(consolationSupply);
       setSupplyTitle('-- CONSOLATION SUPPLY (1) --');
-      addToLog(`${consolationSupply[0].icon || '🧪'} ${consolationSupply[0].name}`, 'error');
+      addToLog(consolationSupply[0].name, 'error');
       setStep('SHOW_MATERIALS');
     }
   };
@@ -414,7 +414,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
       // Process actions for acquired materials
       mats.forEach(m => {
-        addToLog(`${m.icon || '🧪'} ${m.name}`, 'success');
+        addToLog(m.name, 'success');
         if (m.action && m.action !== ItemAction.NONE) {
           const { message } = processItemAction(m.action, m.actionValue);
           if (message) addToLog(message, 'warning');
@@ -946,7 +946,6 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                   <div className="flex flex-wrap justify-center gap-4 max-h-[400px] overflow-y-auto custom-scrollbar p-2">
                     {materials.map((m, i) => (
                       <div key={i} className="group relative flex flex-col items-center gap-2 p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-emerald-500/10 hover:border-emerald-500/30 transition-all duration-300 min-w-[120px] animate-fade-in-up" style={{ animationDelay: `${i * 100} ms` }}>
-                        <span className="text-5xl group-hover:scale-110 transition-transform duration-300">{m.icon || '🧪'}</span>
                         <span className="text-white font-bold text-sm">{m.name}</span>
                         {m.action && m.action !== ItemAction.NONE && (
                           <span className="text-[10px] text-emerald-400 uppercase tracking-wider font-bold">Effect Applied!</span>
