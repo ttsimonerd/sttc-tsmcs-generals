@@ -185,17 +185,21 @@ const App: React.FC = () => {
     );
   }
 
+  const isForcedPunishment = punishmentRedirection?.active;
+
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100 flex">
-      <Sidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        isOwner={userRole === 'Owner'}
-        userRole={userRole}
-        hasVipBadge={hasVipBadge()}
-      />
+      {!isForcedPunishment && (
+        <Sidebar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          isOwner={userRole === 'Owner'}
+          userRole={userRole}
+          hasVipBadge={hasVipBadge()}
+        />
+      )}
 
-      <main className="flex-1 ml-20 md:ml-64 p-6 md:p-12 transition-all">
+      <main className={`flex-1 p-6 md:p-12 transition-all ${isForcedPunishment ? 'ml-0' : 'ml-20 md:ml-64'}`}>
         {broadcastMessage && (
           <div className="mb-8 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl flex items-center gap-4 animate-pop-in">
             <span className="text-2xl animate-pulse">📢</span>
