@@ -7,7 +7,7 @@ const STORAGE_KEY = 'materials_registry_data';
 const MaterialRegistry: React.FC = () => {
     const [materials, setMaterials] = useState<Material[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
-    const [newMaterial, setNewMaterial] = useState({ name: '', icon: '🧪', action: ItemAction.NONE, actionValue: 0 });
+    const [newMaterial, setNewMaterial] = useState({ name: '', action: ItemAction.NONE, actionValue: 0 });
     const [notification, setNotification] = useState<string | null>(null);
 
     useEffect(() => {
@@ -15,7 +15,7 @@ const MaterialRegistry: React.FC = () => {
         if (stored) {
             setMaterials(JSON.parse(stored));
         } else {
-            setMaterials(MATERIALS_LIST.map(name => ({ name, icon: '🧪', action: ItemAction.NONE, actionValue: 0 })));
+            setMaterials(MATERIALS_LIST.map(name => ({ name, action: ItemAction.NONE, actionValue: 0 })));
         }
     }, []);
 
@@ -37,7 +37,7 @@ const MaterialRegistry: React.FC = () => {
         }
         const updated = [{ ...newMaterial, name: newMaterial.name.trim() }, ...materials];
         handleSave(updated);
-        setNewMaterial({ name: '', icon: '🧪', action: ItemAction.NONE, actionValue: 0 });
+        setNewMaterial({ name: '', action: ItemAction.NONE, actionValue: 0 });
         showNotif('Material added! 🧪');
     };
 
@@ -51,7 +51,7 @@ const MaterialRegistry: React.FC = () => {
 
     const handleReset = () => {
         if (confirm('Reset material pool to the authentic default list?')) {
-            handleSave(MATERIALS_LIST.map(name => ({ name, icon: '🧪', action: ItemAction.NONE, actionValue: 0 })));
+            handleSave(MATERIALS_LIST.map(name => ({ name, action: ItemAction.NONE, actionValue: 0 })));
             showNotif('Pool reset to defaults.');
         }
     };
@@ -100,16 +100,6 @@ const MaterialRegistry: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Icon</label>
-                                    <input
-                                        type="text"
-                                        value={newMaterial.icon}
-                                        onChange={(e) => setNewMaterial({ ...newMaterial, icon: e.target.value })}
-                                        placeholder="🧪"
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                                    />
-                                </div>
                                 <div className="space-y-1">
                                     <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Action Value</label>
                                     <input
@@ -181,7 +171,6 @@ const MaterialRegistry: React.FC = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead className="sticky top-0 bg-zinc-900 z-10">
                                     <tr className="border-b border-white/10">
-                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Icon</th>
                                         <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Material Name</th>
                                         <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Action</th>
                                         <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
@@ -197,7 +186,6 @@ const MaterialRegistry: React.FC = () => {
                                     ) : (
                                         filteredMaterials.map((m) => (
                                             <tr key={m.name} className={`hover:bg-white/5 transition-colors group ${searchTerm && m.name.toLowerCase().includes(searchTerm.toLowerCase()) ? 'bg-emerald-500/5' : ''}`}>
-                                                <td className="px-6 py-4 text-xl">{m.icon || '🧪'}</td>
                                                 <td className="px-6 py-4 text-white font-medium">{m.name}</td>
                                                 <td className="px-6 py-4">
                                                     <span className={`text-[10px] px-2 py-1 rounded-full border ${m.action && m.action !== ItemAction.NONE

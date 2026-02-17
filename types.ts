@@ -81,7 +81,6 @@ export enum ItemAction {
 
 export interface Material {
   name: string;
-  icon?: string;
   action?: ItemAction;
   actionValue?: number;
 }
