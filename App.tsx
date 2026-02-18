@@ -76,7 +76,7 @@ const App: React.FC = () => {
       setIsLoggedIn(true);
       setError('');
     } else {
-      setError('Wrong password! 💔🥀');
+      setError('KYS NIGGER 💔🥀');
     }
   };
 

@@ -215,7 +215,7 @@ const VipSupplies: React.FC = () => {
       {/* Info */}
       <div className="text-center text-zinc-600 text-xs">
         <p>VIP Supplies are premium items given to players who purchase VIP Choice from the shop.</p>
-        <p className="mt-1">When a player buys VIP Choice, they receive 3 random premium supplies!</p>
+        <p className="mt-1">When a player buys VIP Choice, they receive 1 random premium supply!</p>
       </div>
     </div>
   );

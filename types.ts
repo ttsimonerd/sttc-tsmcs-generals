@@ -88,11 +88,11 @@ export interface ProbabilityConfig {
 }
 
 export const DEFAULT_DAYS: DayProbability[] = [
-  { dayName: 'Monday', dayNumber: 0, yesProb: 70, noProb: 20 },
-  { dayName: 'Tuesday', dayNumber: 1, yesProb: 10, noProb: 80 },
+  { dayName: 'Monday', dayNumber: 0, yesProb: 80, noProb: 10 },
+  { dayName: 'Tuesday', dayNumber: 1, yesProb: 20, noProb: 70 },
   { dayName: 'Wednesday', dayNumber: 2, yesProb: 70, noProb: 20 },
   { dayName: 'Thursday', dayNumber: 3, yesProb: 1, noProb: 89 },
-  { dayName: 'Friday', dayNumber: 4, yesProb: 80, noProb: 10 },
+  { dayName: 'Friday', dayNumber: 4, yesProb: 89, noProb: 1 },
   { dayName: 'Saturday', dayNumber: 5, yesProb: 0, noProb: 90 },
   { dayName: 'Sunday', dayNumber: 6, yesProb: 0, noProb: 90 }
 ];

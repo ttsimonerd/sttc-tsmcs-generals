@@ -125,12 +125,10 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           return;
         }
 
-        // Get 3 random premium supplies
+        // Get 1 random premium supply
         const randomSupplies = [];
-        for (let i = 0; i < 3; i++) {
-          const randomIndex = Math.floor(Math.random() * vipSupplies.length);
-          randomSupplies.push(vipSupplies[randomIndex]);
-        }
+        const randomIndex = Math.floor(Math.random() * vipSupplies.length);
+        randomSupplies.push(vipSupplies[randomIndex]);
 
         // Add bonus points
         addPoints(50);

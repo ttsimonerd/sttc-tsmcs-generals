@@ -44,23 +44,23 @@ export const ITEM_IDS = {
 
 // Default VIP Supplies (premium materials for VIP Choice reward)
 export const DEFAULT_VIP_SUPPLIES: string[] = [
-  "Premium Select",
-  "Golden Collection",
-  "Exclusive Access",
-  "VIP Member Bundle",
-  "Platinum Tier",
-  "Elite Pass",
-  "Diamond Selection",
-  "Royal Treatment",
-  "VIP Exclusive",
-  "Top Tier Item"
+  "Derpixon",
+  "Candy Love",
+  "Octokuro Model",
+  "Maplestar",
+  "Anna Anon",
+  "Minus8",
+  "Amplected",
+  "Suoiresnu",
+  "Misfitbite",
+  "Fortnite"
 ];
 
 // Default VIP Choice Shop Item
 export const DEFAULT_VIP_CHOICE: ShopItem = {
   id: 'vip-riddle',
   name: 'VIP Choice',
-  description: 'Get 3 premium supplies!',
+  description: 'Get 1 premium supplies!',
   price: 120,
   icon: '👑',
   stock: -1,
@@ -79,14 +79,14 @@ const DEFAULT_SHOP_ITEMS: ShopItem[] = [
 const PUNISHMENT_COLORS = ['#dc2626', '#ea580c', '#d97706', '#65a30d', '#0891b2', '#7c3aed', '#db2777'];
 
 const DEFAULT_PUNISHMENTS: PunishmentOption[] = [
-  { id: '1', text: '10 Pushups', color: PUNISHMENT_COLORS[0 % PUNISHMENT_COLORS.length], description: 'Realiza 10 flexiones de pecho ahora mismo.' },
-  { id: '2', text: 'No Phone 1hr', color: PUNISHMENT_COLORS[1 % PUNISHMENT_COLORS.length], description: 'No puedes usar tu teléfono durante la próxima hora.' },
-  { id: '3', text: 'Cold Shower', color: PUNISHMENT_COLORS[2 % PUNISHMENT_COLORS.length], description: 'Toma una ducha de agua fría inmediatamente.' },
-  { id: '4', text: 'Skip Lunch', color: PUNISHMENT_COLORS[3 % PUNISHMENT_COLORS.length], description: 'Debes saltarte el almuerzo de hoy.' },
-  { id: '5', text: 'Run 1 Mile', color: PUNISHMENT_COLORS[4 % PUNISHMENT_COLORS.length], description: 'Sal a correr una milla (1.6 km) ahora.' },
-  { id: '6', text: 'FREE PASS!', color: PUNISHMENT_COLORS[5 % PUNISHMENT_COLORS.length], description: '¡Has tenido suerte! Te has librado de un castigo.' },
-  { id: '7', text: 'Edge 1 Hour', color: PUNISHMENT_COLORS[6 % PUNISHMENT_COLORS.length], description: 'Debes hacer el reto de Edge con {supply} durante 1 hora.' },
-  { id: '8', text: 'Drink Water Only', color: PUNISHMENT_COLORS[0 % PUNISHMENT_COLORS.length], description: 'Solo puedes beber agua durante el resto del día.' },
+  { id: '1', text: '?', color: PUNISHMENT_COLORS[0 % PUNISHMENT_COLORS.length], description: 'Come twice with {supply}.' },
+  { id: '2', text: '?', color: PUNISHMENT_COLORS[1 % PUNISHMENT_COLORS.length], description: 'Watch the video number 7 of {supply}' },
+  { id: '3', text: '?', color: PUNISHMENT_COLORS[2 % PUNISHMENT_COLORS.length], description: 'Watch the longest video of {supply}' },
+  { id: '4', text: '?', color: PUNISHMENT_COLORS[3 % PUNISHMENT_COLORS.length], description: 'Watch the most watched video of {supply}' },
+  { id: '5', text: '?', color: PUNISHMENT_COLORS[4 % PUNISHMENT_COLORS.length], description: 'Watch the most liked video of {supply}' },
+  { id: '6', text: '?', color: PUNISHMENT_COLORS[5 % PUNISHMENT_COLORS.length], description: 'Watch the video number 6 of {supply}' },
+  { id: '7', text: '?', color: PUNISHMENT_COLORS[6 % PUNISHMENT_COLORS.length], description: 'Use the \"el globo\" with {supply}' },
+  { id: '8', text: '?', color: PUNISHMENT_COLORS[0 % PUNISHMENT_COLORS.length], description: 'Use the \"water globo\" with {supply}' },
 ];
 
 // Points functions
