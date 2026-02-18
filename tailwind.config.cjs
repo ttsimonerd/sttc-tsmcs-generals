@@ -2,8 +2,10 @@
 module.exports = {
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "./components/**/*.{js,ts,jsx,tsx}"
+    "./*.{ts,tsx}",
+    "./components/**/*.{ts,tsx}",
+    "./services/**/*.{ts,tsx}",
+    "./data/**/*.{ts,tsx}",
   ],
   theme: {
     extend: {
@@ -29,7 +31,6 @@ module.exports = {
         'holographic': 'holographic 2s ease-in-out infinite',
         'success-sparkle': 'successSparkle 0.8s ease-out forwards',
         'failure-pulse': 'failurePulse 0.5s ease-out',
-        'pop-in': 'popIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
       },
       keyframes: {
         fadeIn: {

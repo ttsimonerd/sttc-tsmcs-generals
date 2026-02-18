@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { applyTheme, getSavedTheme, THEME_PRESETS } from '../services/themeService';
-import { resetWins, loadWeekData } from '../services/rngService';
+import { resetWins } from '../services/rngService';
 
 const SystemControl: React.FC = () => {
     const [broadcast, setBroadcast] = useState('');

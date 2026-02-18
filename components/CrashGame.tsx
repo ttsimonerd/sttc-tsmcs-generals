@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { addPoints, spendPoints, getPoints, addPointsWithMultiplier } from '../services/pointsService';
+import { spendPoints, getPoints, addPointsWithMultiplier } from '../services/pointsService';
 import confetti from 'canvas-confetti';
 
 type GameState = 'IDLE' | 'RISING' | 'CASHED_OUT' | 'CRASHED';

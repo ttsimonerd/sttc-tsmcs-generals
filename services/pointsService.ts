@@ -37,7 +37,6 @@ const VIP_SUPPLIES_KEY = 'vip-supplies-list';
 // Item IDs for effects
 export const ITEM_IDS = {
   EXTRA_ROLL: '1',
-  SKIP_PUNISHMENT: '2',
   DOUBLE_POINTS: '3',
   MYSTERY_BOX: '4',
   VIP_BADGE: '5',
@@ -270,11 +269,6 @@ export const processItemAction = (action?: ItemAction | string, value: number = 
     case 'EXTRA_ROLL': // Legacy support
       addToInventory(ITEM_IDS.EXTRA_ROLL, value || 1);
       return { success: true, message: `Added ${value || 1} Extra Roll(s) to inventory!` };
-
-    case ItemAction.GIVE_SKIP_PUNISHMENT:
-    case 'SKIP_PUNISHMENT': // Legacy support
-      addToInventory(ITEM_IDS.SKIP_PUNISHMENT, value || 1);
-      return { success: true, message: `Added ${value || 1} Skip Punishment(s) to inventory!` };
 
     case ItemAction.DOUBLE_POINTS_BUFF:
     case 'DOUBLE_POINTS': // Legacy support

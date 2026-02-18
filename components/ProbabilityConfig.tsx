@@ -86,17 +86,6 @@ const ProbabilityConfig: React.FC = () => {
     return 'text-red-400';
   };
 
-  const getBarWidth = (prob: number) => {
-    return `${Math.min(100, Math.max(0, prob))}%`;
-  };
-
-  const getBarColor = (yesProb: number) => {
-    if (yesProb >= 80) return 'bg-emerald-500';
-    if (yesProb >= 50) return 'bg-yellow-500';
-    if (yesProb >= 20) return 'bg-orange-500';
-    return 'bg-red-500';
-  };
-
   return (
     <div className="max-w-5xl mx-auto space-y-8 fade-in">
       <div className="glass-panel p-8 rounded-2xl space-y-6 relative overflow-hidden border border-emerald-500/30">

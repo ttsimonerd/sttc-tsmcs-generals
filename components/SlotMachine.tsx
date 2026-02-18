@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { addPoints, getPoints, addPointsWithMultiplier, spendPoints } from '../services/pointsService';
+import { getPoints, addPointsWithMultiplier, spendPoints } from '../services/pointsService';
 import confetti from 'canvas-confetti';
 
 interface SlotSymbol {

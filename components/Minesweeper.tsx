@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { addPoints, getPoints, addPointsWithMultiplier } from '../services/pointsService';
+import React, { useState, useEffect, useCallback } from 'react';
+import { getPoints, addPointsWithMultiplier } from '../services/pointsService';
 import confetti from 'canvas-confetti';
 
 type Difficulty = 'EASY' | 'MEDIUM' | 'HARD';

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { rollWithLimit, checkMultiple, getMaterials, loadWeekData, resetWins, getEdgeSupply } from '../services/rngService';
 import { RiddleResponse, FailedLog, ActionLog, Material, ItemAction } from '../types';
-import { addPoints, getPoints, canClaimDailyBonus, claimDailyBonus, ITEM_IDS, hasItem, useFromInventory, getInventoryCount, addPointsWithMultiplier, isDoublePointsActive, getDoublePointsRemaining, processItemAction } from '../services/pointsService';
+import { getPoints, canClaimDailyBonus, claimDailyBonus, ITEM_IDS, useFromInventory, getInventoryCount, addPointsWithMultiplier, getDoublePointsRemaining, processItemAction } from '../services/pointsService';
 
 // Local type aliases to avoid inline generic unions in hooks (Babel parsing workaround)
 type Step = 'IDLE' | 'ROLLING' | 'ROLLED' | 'MULTIPLE_OFFER' | 'MATERIALS_OFFER' | 'SHOW_MATERIALS';
@@ -9,9 +9,6 @@ type ResultAnimation = 'idle' | 'pulse' | 'glow';
 type RedeemerStatus = 'IDLE' | 'CORRECT' | 'WRONG';
 
 import { getRiddles } from '../services/riddleService';
-
-// Simplified labels for the roulette (SI/NO)
-const ROULETTE_LABELS = ['NO', 'SI', 'NO', 'SI', 'NO', 'SI'];
 
 // All possible results for the roulette (used for actual game logic)
 const ROULETTE_RESULTS = ['No 🥶', 'Yes 🥵', 'No 🥶', 'Yes 🥵', 'Dont Break The Rule!', 'Edge 7 days... 🥴'];

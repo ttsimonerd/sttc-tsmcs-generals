@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import RngTactician from './components/RngTactician';
-import DatabaseRegistry from './components/DatabaseRegistry';
 import ProbabilityConfig from './components/ProbabilityConfig';
 import MiniGames from './components/MiniGames';
 import PunishmentWheel from './components/PunishmentWheel';
@@ -17,7 +16,7 @@ import GameTuner from './components/GameTuner';
 import SystemControl from './components/SystemControl';
 import ConfigExport from './components/ConfigExport';
 import Inventory from './components/Inventory';
-import { AppView, UserRole, Material, ItemAction, PunishmentOption } from './types';
+import { AppView, UserRole } from './types';
 import { hasVipBadge, setCurrentUser } from './services/pointsService';
 
 // User credentials configuration
@@ -93,8 +92,6 @@ const App: React.FC = () => {
     switch (currentView) {
       case AppView.RNG_TACTICIAN:
         return <RngTactician onRedirectionTriggered={redirectionHandler} />;
-      case AppView.DATABASE:
-        return ownerOnly(<DatabaseRegistry />);
       case AppView.PROBABILITIES:
         return ownerOnly(<ProbabilityConfig />);
       case AppView.INVENTORY:

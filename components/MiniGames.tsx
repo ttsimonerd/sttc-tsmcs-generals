@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getPoints, addPoints, spendPoints, addPointsWithMultiplier, isDoublePointsActive, getDoublePointsRemaining } from '../services/pointsService';
+import { getPoints, spendPoints, addPointsWithMultiplier } from '../services/pointsService';
 import { AppView } from '../types';
 
 interface MiniGamesProps {

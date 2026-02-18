@@ -11,13 +11,8 @@ import {
   saveVipChoiceItem,
   getVipSupplies,
   ITEM_IDS,
-  addToInventory,
   getInventoryCount,
-  activateDoublePoints,
-  isDoublePointsActive,
   getDoublePointsRemaining,
-  openMysteryBox,
-  grantVipBadge,
   hasVipBadge,
   processItemAction
 } from '../services/pointsService';
