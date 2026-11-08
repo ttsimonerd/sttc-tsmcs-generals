@@ -1,5 +1,5 @@
 import { DEFAULT_RIDDLES } from "../data/riddles";
-import { RiddleResponse } from "../types";
+import type { RiddleResponse } from "../types";
 
 const RIDDLES_KEY = 'redeemer_riddles_data';
 

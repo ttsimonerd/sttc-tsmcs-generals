@@ -1,5 +1,6 @@
 // Points Service - Manages user points and item effects
-import { ItemAction, ShopItem, PunishmentOption } from '../types';
+import { ItemAction } from '../types';
+import type { ShopItem, PunishmentOption } from '../types';
 
 // Current user tracking
 const CURRENT_USER_KEY = 'current-user';
@@ -26,7 +27,6 @@ const LAST_DAILY_BONUS_KEY = 'last-daily-bonus';
 const ITEM_INVENTORY_KEY = 'item-inventory';
 const DOUBLE_POINTS_EXPIRY_KEY = 'double-points-expiry';
 const VIP_BADGE_KEY = 'vip-badge-owned';
-const WEEK_DATA_KEY = 'rng_week_data';
 
 // Shared keys (same for all users - Owner-managed content)
 const SHOP_ITEMS_KEY = 'shop-items';
@@ -97,6 +97,10 @@ export const getPoints = (user?: string): number => {
 
 export const setPoints = (points: number, user?: string): void => {
   localStorage.setItem(userKey(POINTS_KEY, user), Math.max(0, points).toString());
+  // Only the signed-in user's balance should refresh the shell chip.
+  if (!user && typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('points-updated'));
+  }
 };
 
 export const addPoints = (amount: number): number => {

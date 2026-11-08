@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getPoints, addPointsWithMultiplier, spendPoints } from '../services/pointsService';
 import confetti from 'canvas-confetti';
+import { Badge, Button, PageHeader, Panel, cn } from './ui/Primitives';
 
 interface SlotSymbol {
   emoji: string;
@@ -60,7 +61,6 @@ const SlotMachine: React.FC = () => {
   }, [config, symbols]);
 
   const spin = () => {
-    // ...
     if (freeSpins > 0) {
       setFreeSpins(prev => prev - 1);
     } else if (points < config.spinCost) {
@@ -71,6 +71,7 @@ const SlotMachine: React.FC = () => {
     }
 
     setIsSpinning(true);
+    setSpinningReels([true, true, true]);
     setWinAmount(0);
     setWinMessage('');
     setWasDoubled(false);
@@ -127,17 +128,17 @@ const SlotMachine: React.FC = () => {
 
       if (r1.emoji === r2.emoji && r2.emoji === r3.emoji) {
         multiplier = r1.multiplier * 3;
-        message = `JACKPOT! 3x ${r1.name}`;
+        message = `Three of a kind · ${r1.name}`;
       } else if (r1.emoji === r2.emoji || r2.emoji === r3.emoji || r1.emoji === r3.emoji) {
         const matching = r1.emoji === r2.emoji ? r1 : r3.emoji === r2.emoji ? r2 : r1;
         multiplier = matching.multiplier;
-        message = `PAIR! 2x ${matching.name}`;
+        message = `Pair · ${matching.name}`;
       } else {
-        message = 'No win this time...';
+        message = 'No match';
       }
 
       if (multiplier > 0) {
-        const baseWinPts = multiplier * 5;
+        const baseWinPts = multiplier * config.spinCost;
         const { doubled } = addPointsWithMultiplier(baseWinPts);
         const finalWinPts = doubled ? baseWinPts * 2 : baseWinPts;
         setWinAmount(finalWinPts);
@@ -169,148 +170,117 @@ const SlotMachine: React.FC = () => {
         }
       }
 
-      setSpinCount(prev => {
-        const newCount = prev + 1;
-        if (newCount % 10 === 0) {
-          setFreeSpins(f => f + 1);
-        }
-        return newCount;
-      });
+      const nextSpinCount = spinCount + 1;
+      setSpinCount(nextSpinCount);
+      if (config.freeSpinInterval > 0 && nextSpinCount % config.freeSpinInterval === 0) {
+        setFreeSpins(f => f + 1);
+      }
     }, 1500);
   };
 
-  const canAffordSpin = points >= 5 || freeSpins > 0;
+  const canAffordSpin = freeSpins > 0 || points >= config.spinCost;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-white">Slot Machine</h2>
-        <p className="text-zinc-400">Match symbols to win! (No losses - only 5 pts to play)</p>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 glass-panel p-4 rounded-xl border border-white/10">
-        <div className="text-zinc-400 text-sm">
-          <span className="text-white font-bold">{points}</span> pts
-        </div>
-        <div className="text-zinc-500 text-xs">
-          Spin Cost: 5 pts | 1 free spin every 10 spins
-        </div>
-        {freeSpins > 0 && (
-          <div className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-full text-sm font-bold animate-pulse">
-            {freeSpins} FREE SPIN{freeSpins > 1 ? 'S' : ''}
-          </div>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Mini game"
+        title="Slot machine"
+        description={`Match symbols to win. Each spin costs ${config.spinCost} pts and every ${config.freeSpinInterval} spins earns a free one.`}
+        actions={
+          <>
+            <div className="chip">
+              <span className="text-zinc-500">SP</span>
+              <span className="font-bold tabular-nums text-white">{points}</span>
+            </div>
+            {freeSpins > 0 && <Badge tone="warning">{freeSpins} free spin{freeSpins > 1 ? 's' : ''}</Badge>}
+          </>
+        }
+      />
 
       {winAmount > 0 && (
-        <div className="p-6 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-center animate-fade-in-up">
-          <p className="text-4xl mb-2 animate-bounce">🎉</p>
-          <p className="text-emerald-400 font-bold text-2xl">{winMessage}</p>
-          <p className="text-white font-bold text-xl">+{winAmount} pts{wasDoubled && <span className="text-yellow-400 ml-2">(2x!)</span>}</p>
-        </div>
+        <Panel tone="accent" className="p-5 text-center fade-in">
+          <p className="text-[15px] font-semibold text-emerald-300">{winMessage}</p>
+          <p className="mt-1 text-sm text-zinc-300">
+            +{winAmount} pts{wasDoubled && <span className="ml-1 text-amber-300">· double points</span>}
+          </p>
+        </Panel>
       )}
 
-      <div className="glass-panel p-8 rounded-2xl border border-white/10">
-        <div className="flex justify-center gap-4 mb-8">
-          {reels.map((symbol, index) => (
-            <div
-              key={index}
-              className={`
-                w-24 h-32 md:w-32 md:h-40 rounded-2xl border-4 flex items-center justify-center
-                ${spinningReels[index]
-                  ? 'bg-zinc-800 border-zinc-600 animate-pulse'
-                  : 'bg-gradient-to-br from-zinc-800 to-zinc-900 border-yellow-500/50'
-                }
-              `}
-            >
-              <span className="text-5xl md:text-6xl filter drop-shadow-lg">
-                {spinningReels[index] ? (
-                  <span className="animate-spin">🎰</span>
-                ) : (
-                  <span>{symbol.emoji}</span>
+      <Panel className="p-5 sm:p-7">
+        <div className="flex flex-col items-center gap-6">
+          <div className="grid w-full max-w-md grid-cols-3 gap-2 sm:gap-4">
+            {reels.map((symbol, index) => (
+              <div
+                key={index}
+                aria-label={spinningReels[index] ? 'Reel spinning' : symbol.name}
+                className={cn(
+                  'flex aspect-[3/4] items-center justify-center rounded-2xl border transition-colors',
+                  spinningReels[index]
+                    ? 'border-[color:var(--line-strong)] bg-white/[0.04]'
+                    : 'border-amber-400/25 bg-black/30'
                 )}
-              </span>
-            </div>
-          ))}
-        </div>
+              >
+                {spinningReels[index] ? (
+                  <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-amber-400" />
+                ) : (
+                  <span className="text-5xl drop-shadow-lg sm:text-6xl">{symbol.emoji}</span>
+                )}
+              </div>
+            ))}
+          </div>
 
-        <div className="flex justify-center gap-6 mb-6 text-sm">
-          {SYMBOLS.slice(-3).map(symbol => (
-            <div key={symbol.emoji} className="text-center">
-              <span className="text-2xl">{symbol.emoji}</span>
-              <p className="text-zinc-500">{symbol.multiplier}x</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex justify-center">
-          <button
+          <Button
+            size="lg"
             onClick={spin}
             disabled={isSpinning || !canAffordSpin}
-            className={`
-              px-12 py-4 rounded-xl font-bold text-xl transition-all
-              hover:scale-105 active:scale-95 shadow-lg
-              ${!canAffordSpin
-                ? 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                : isSpinning
-                  ? 'bg-zinc-600 text-zinc-400 cursor-wait'
-                  : 'bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black'
-              }
-            `}
+            className={cn('w-full max-w-sm', canAffordSpin && !isSpinning && 'bg-amber-400 text-black hover:brightness-105')}
           >
-            {isSpinning ? (
-              <span className="animate-pulse">SPINNING...</span>
-            ) : !canAffordSpin ? (
-              'NOT ENOUGH POINTS'
-            ) : (
-              `SPIN${freeSpins > 0 ? ' (FREE)' : ''}`
-            )}
-          </button>
-        </div>
-      </div>
+            {isSpinning ? 'Spinning…' : !canAffordSpin ? 'Not enough points' : `Spin${freeSpins > 0 ? ' · free' : ''}`}
+          </Button>
 
-      <div className="glass-panel p-6 rounded-xl border border-white/5">
-        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Payout Table</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <div className="bg-zinc-900/50 p-3 rounded-lg text-center">
-            <p className="text-zinc-500 text-xs mb-1">2 matching</p>
-            <p className="text-white font-bold">2x - 20x</p>
-          </div>
-          <div className="bg-zinc-900/50 p-3 rounded-lg text-center">
-            <p className="text-zinc-500 text-xs mb-1">3x Crown</p>
-            <p className="text-yellow-400 font-bold">60x</p>
-          </div>
-          <div className="bg-zinc-900/50 p-3 rounded-lg text-center">
-            <p className="text-zinc-500 text-xs mb-1">3x Diamond</p>
-            <p className="text-cyan-400 font-bold">30x</p>
-          </div>
-          <div className="bg-zinc-900/50 p-3 rounded-lg text-center">
-            <p className="text-zinc-500 text-xs mb-1">3x Star</p>
-            <p className="text-yellow-300 font-bold">15x</p>
-          </div>
+          <p className="text-[11px] text-zinc-600">
+            Spins played: <span className="font-mono text-zinc-400">{spinCount}</span>
+          </p>
         </div>
-      </div>
+      </Panel>
 
-      <div className="glass-panel p-6 rounded-xl border border-white/5 space-y-3">
-        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">How to Play</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-zinc-400">
-          <div className="space-y-1">
-            <p className="text-white font-medium">Cost</p>
-            <p>Only 5 points per spin! No losses.</p>
+      <div className="grid gap-6 md:grid-cols-3">
+        <Panel className="p-5 md:col-span-2">
+          <p className="eyebrow">Payouts</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {[
+              { label: '2 matching', value: '2x – 20x' },
+              { label: '3 crowns', value: '60x' },
+              { label: '3 diamonds', value: '30x' },
+              { label: '3 stars', value: '15x' },
+            ].map(row => (
+              <div key={row.label} className="rounded-lg border border-[color:var(--line)] bg-black/25 px-3 py-2 text-center">
+                <p className="text-[9px] uppercase tracking-wider text-zinc-600">{row.label}</p>
+                <p className="mt-1 font-mono text-sm font-bold text-amber-300">{row.value}</p>
+              </div>
+            ))}
           </div>
-          <div className="space-y-1">
-            <p className="text-white font-medium">Payouts</p>
-            <p>Match 2 symbols for small win, 3 for big!</p>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            {SYMBOLS.slice(-3).map(symbol => (
+              <span key={symbol.emoji} className="flex items-center gap-1.5 text-[11px] text-zinc-500">
+                <span className="text-base">{symbol.emoji}</span>
+                <span className="font-mono text-zinc-400">{symbols[SYMBOLS.indexOf(symbol)].multiplier}x</span>
+              </span>
+            ))}
           </div>
-          <div className="space-y-1">
-            <p className="text-white font-medium">Free Spins</p>
-            <p>Get 1 free spin for every 10 plays!</p>
-          </div>
-        </div>
+        </Panel>
+
+        <Panel tone="muted" className="p-5">
+          <p className="eyebrow">How it works</p>
+          <ul className="mt-3 space-y-1.5 text-xs leading-relaxed text-zinc-500">
+            <li>Every spin costs {config.spinCost} pts and always returns something on a match.</li>
+            <li>Free spins are awarded every {config.freeSpinInterval} spins.</li>
+            <li>Double-points bonuses apply automatically.</li>
+          </ul>
+        </Panel>
       </div>
     </div>
   );
 };
 
 export default SlotMachine;
-

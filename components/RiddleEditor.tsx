@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { getRiddles, saveRiddles, resetRiddles } from '../services/riddleService';
-import { RiddleResponse } from '../types';
+import type { RiddleResponse } from '../types';
+import { Badge, Button, EmptyState, PageHeader, Panel, Stat } from './ui/Primitives';
+import { useToast } from './ui/Toast';
+import { logAudit } from '../services/auditService';
 
 const RiddleEditor: React.FC = () => {
+    const { toast } = useToast();
     const [riddles, setRiddles] = useState<RiddleResponse[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [newRiddle, setNewRiddle] = useState({ question: '', answer: '' });
-    const [notification, setNotification] = useState<string | null>(null);
-    const [editingId, setEditingId] = useState<string | null>(null);
 
     useEffect(() => {
         setRiddles(getRiddles());
     }, []);
 
-    const showNotif = (msg: string) => {
-        setNotification(msg);
-        setTimeout(() => setNotification(null), 3000);
-    };
-
     const handleAdd = () => {
         if (!newRiddle.question.trim() || !newRiddle.answer.trim()) return;
-        const updated = [newRiddle, ...riddles];
+        const updated = [{ ...newRiddle, question: newRiddle.question.trim(), answer: newRiddle.answer.trim() }, ...riddles];
         saveRiddles(updated);
         setRiddles(updated);
         setNewRiddle({ question: '', answer: '' });
-        showNotif('New riddle added! 🧩');
+        toast('Riddle added to the pool.', 'success');
+        logAudit('Added riddle', newRiddle.question.trim().slice(0, 70));
     };
 
     const handleDelete = (question: string) => {
@@ -32,7 +30,8 @@ const RiddleEditor: React.FC = () => {
             const updated = riddles.filter(r => r.question !== question);
             saveRiddles(updated);
             setRiddles(updated);
-            showNotif('Challenge removed.');
+            toast('Riddle removed.', 'info');
+            logAudit('Removed riddle', question.slice(0, 70));
         }
     };
 
@@ -40,7 +39,8 @@ const RiddleEditor: React.FC = () => {
         if (confirm('Reset to the authentic riddle pool?')) {
             resetRiddles();
             setRiddles(getRiddles());
-            showNotif('Riddles reset to defaults.');
+            toast('Riddles reset to defaults.', 'info');
+            logAudit('Reset riddle pool');
         }
     };
 
@@ -50,121 +50,130 @@ const RiddleEditor: React.FC = () => {
     );
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white">Riddle Editor</h1>
-                    <p className="text-zinc-500 text-sm mt-1">Manage Redeemer challenges used for resetting the win limit</p>
-                </div>
-                <div className="flex gap-2">
-                    {notification && (
-                        <div className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded-lg animate-fade-in">
-                            <span className="text-emerald-400 text-sm">{notification}</span>
-                        </div>
-                    )}
-                    <button
-                        onClick={handleReset}
-                        className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm hover:bg-red-500/20 transition-all font-medium"
-                    >
-                        Reset Defaults
-                    </button>
-                </div>
-            </div>
+        <div className="space-y-6">
+            <PageHeader
+                eyebrow="Configure"
+                title="Riddles"
+                description="Challenges served to players who hit the win limit. A correct answer resets their run."
+                actions={<Button variant="secondary" onClick={handleReset}>Reset defaults</Button>}
+            />
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Creator */}
-                <div className="lg:col-span-1 space-y-6">
-                    <div className="glass-panel p-6 rounded-2xl border border-blue-500/30 space-y-4">
-                        <h2 className="text-sm font-bold text-blue-400 uppercase tracking-widest">Create Challenge</h2>
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Question / Riddle</label>
-                                <textarea
-                                    value={newRiddle.question}
-                                    onChange={(e) => setNewRiddle(prev => ({ ...prev, question: e.target.value }))}
-                                    placeholder="The riddle text..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50 min-h-[100px] resize-none"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-[10px] text-zinc-500 uppercase tracking-widest ml-1">Correct Answer</label>
-                                <input
-                                    type="text"
-                                    value={newRiddle.answer}
-                                    onChange={(e) => setNewRiddle(prev => ({ ...prev, answer: e.target.value }))}
-                                    placeholder="Expected answer..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 text-white text-sm focus:outline-none focus:border-blue-500/50"
-                                    onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-                                />
-                            </div>
-                            <button
-                                onClick={handleAdd}
-                                disabled={!newRiddle.question.trim() || !newRiddle.answer.trim()}
-                                className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50"
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+                <div className="space-y-6">
+                    <Panel tone="accent" className="space-y-4 p-5">
+                        <div>
+                            <p className="eyebrow">New challenge</p>
+                            <p className="mt-1 text-xs text-zinc-500">Added to the top of the pool.</p>
+                        </div>
+
+                        <div>
+                            <label className="field-label" htmlFor="riddle-question">Question</label>
+                            <textarea
+                                id="riddle-question"
+                                value={newRiddle.question}
+                                onChange={(e) => setNewRiddle(prev => ({ ...prev, question: e.target.value }))}
+                                placeholder="The riddle text…"
+                                className="field min-h-[104px] resize-none"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="field-label" htmlFor="riddle-answer">Correct answer</label>
+                            <input
+                                id="riddle-answer"
+                                type="text"
+                                value={newRiddle.answer}
+                                onChange={(e) => setNewRiddle(prev => ({ ...prev, answer: e.target.value }))}
+                                placeholder="Expected answer…"
+                                className="field"
+                                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                            />
+                        </div>
+
+                        <Button
+                            variant="primary"
+                            onClick={handleAdd}
+                            disabled={!newRiddle.question.trim() || !newRiddle.answer.trim()}
+                            className="w-full"
+                        >
+                            Add riddle
+                        </Button>
+                    </Panel>
+
+                    <Panel className="space-y-3 p-5">
+                        <p className="eyebrow">Pool</p>
+                        <Stat label="Challenges" value={riddles.length} />
+                        <p className="text-[10px] leading-relaxed text-zinc-600">
+                            One is picked at random each time a player reaches the limit. Answer matching ignores surrounding whitespace.
+                        </p>
+                    </Panel>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="relative flex-1">
+                            <svg
+                                className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                                aria-hidden="true"
                             >
-                                + ADD RIDDLE
-                            </button>
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                                type="search"
+                                placeholder="Filter by question or answer…"
+                                aria-label="Filter riddles"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="field pl-10"
+                            />
                         </div>
+                        <Badge>{filteredRiddles.length} shown</Badge>
                     </div>
 
-                    <div className="glass-panel p-6 rounded-2xl border border-white/10">
-                        <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Challenge Stats</h2>
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-zinc-400">Total Riddles:</span>
-                                <span className="text-white font-mono font-bold">{riddles.length}</span>
-                            </div>
-                            <p className="text-[10px] text-zinc-500 mt-4 italic leading-relaxed">
-                                Riddles are shown randomly to users who reach the 3-win limit. Successfully answering a riddle resets their session.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* List */}
-                <div className="lg:col-span-2 space-y-4">
-                    <div className="relative">
-                        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input
-                            type="text"
-                            placeholder="Filter riddles by text or answer..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:outline-none focus:border-blue-500/50 transition-all font-mono text-sm"
-                        />
-                    </div>
-
-                    <div className="space-y-3 max-h-[700px] overflow-y-auto custom-scrollbar pr-2">
+                    <div className="max-h-[720px] space-y-2 overflow-y-auto pr-1 custom-scrollbar">
                         {filteredRiddles.length === 0 ? (
-                            <div className="glass-panel p-12 text-center text-zinc-500 border border-white/5 rounded-2xl">
-                                No matching riddles found.
-                            </div>
+                            <EmptyState
+                                title={riddles.length === 0 ? 'No riddles yet' : 'Nothing matches that filter'}
+                                description={
+                                    riddles.length === 0
+                                        ? 'Add the first challenge on the left and it becomes available immediately.'
+                                        : 'Try a different word, or clear the search field.'
+                                }
+                            />
                         ) : (
-                            filteredRiddles.map((r, i) => (
-                                <div key={r.question} className="glass-panel p-6 rounded-2xl border border-white/10 hover:border-white/20 transition-all group relative overflow-hidden">
-                                    <div className="flex justify-between items-start gap-4">
-                                        <div className="space-y-3 flex-1">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-xs font-mono text-zinc-600">#{riddles.indexOf(r) + 1}</span>
-                                                <h3 className="text-white font-medium leading-relaxed">{r.question}</h3>
+                            filteredRiddles.map((r) => (
+                                <Panel key={r.question} className="group p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 flex-1 space-y-2">
+                                            <div className="flex items-start gap-2.5">
+                                                <span className="mt-0.5 shrink-0 font-mono text-[11px] text-zinc-600">
+                                                    {String(riddles.indexOf(r) + 1).padStart(2, '0')}
+                                                </span>
+                                                <p className="text-[13px] leading-relaxed text-zinc-100">{r.question}</p>
                                             </div>
-                                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
-                                                <span className="text-[10px] font-bold text-emerald-500 uppercase">Answer:</span>
-                                                <span className="text-sm text-emerald-400 font-mono">{r.answer}</span>
+                                            <div className="pl-7">
+                                                <span className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.08] px-2.5 py-1">
+                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-400/70">Answer</span>
+                                                    <span className="font-mono text-xs text-emerald-300">{r.answer}</span>
+                                                </span>
                                             </div>
                                         </div>
                                         <button
+                                            type="button"
                                             onClick={() => handleDelete(r.question)}
-                                            className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                            title="Delete riddle"
+                                            aria-label={`Delete riddle ${riddles.indexOf(r) + 1}`}
+                                            className="shrink-0 rounded-lg border border-transparent p-2 text-zinc-600 transition-colors hover:border-red-500/25 hover:bg-red-500/10 hover:text-red-300 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                                         >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
                                     </div>
-                                </div>
+                                </Panel>
                             ))
                         )}
                     </div>

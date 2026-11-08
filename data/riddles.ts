@@ -1,4 +1,4 @@
-import { RiddleResponse } from "../types";
+import type { RiddleResponse } from "../types";
 
 export const DEFAULT_RIDDLES: RiddleResponse[] = [
     { question: "What has keys but can't open locks?", answer: "Piano" },

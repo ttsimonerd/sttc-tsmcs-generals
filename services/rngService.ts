@@ -1,5 +1,6 @@
 import { MATERIALS_LIST } from "../data/materials";
-import { DEFAULT_DAYS, DEFAULT_WEEKEND_RESTRICTION, DayProbability, ProbabilityConfig, Material, ItemAction } from "../types";
+import { DEFAULT_DAYS, DEFAULT_WEEKEND_RESTRICTION } from "../types";
+import type { DayProbability, ProbabilityConfig, Material } from "../types";
 import { getCurrentUser } from "./pointsService";
 
 interface WeekData {
@@ -136,38 +137,50 @@ export const generateEdgeMessage = (): { message: string; supply: Material } => 
   };
 };
 
-export const rollWithLimit = (forceBypass: boolean = false): string => {
+export type RollOutcome = 'YES' | 'NO' | 'EDGE' | 'LIMIT' | 'BLOCKED';
+
+export interface RollResult {
+  outcome: RollOutcome;
+  message: string;
+}
+
+// Structured roll result. Consumers should branch on `outcome` instead of matching on
+// `message`, because the message is user-editable (weekend restriction text, for example).
+export const rollWithLimitDetailed = (forceBypass: boolean = false): RollResult => {
   const data = loadWeekData();
 
   if (data.yes_count >= 3 && !forceBypass) {
-    return "Dont Break The Rule!";
+    return { outcome: 'LIMIT', message: "Dont Break The Rule!" };
   }
 
   const probs = getTodayProbabilities();
   if (!probs) {
-    return getWeekendMessage();
+    return { outcome: 'BLOCKED', message: getWeekendMessage() };
   }
 
   // Edge has fixed 10% chance
   // YES/NO are calculated from the remaining 90%
-  const [probNo, probYes] = probs;
+  const [, probYes] = probs;
 
   const roll = Math.random();
 
   // 10% Edge | probYes% Yes | probNo% No
   if (roll < 0.10) {
-    return generateEdgeMessage().message;
-  } else if (roll < 0.10 + probYes) {
-    const result = "Yes 🥵";
-    if (!forceBypass) {
-      data.yes_count += 1;
-      saveWeekData(data);
-    }
-    return result;
-  } else {
-    return "No 🥶";
+    return { outcome: 'EDGE', message: generateEdgeMessage().message };
   }
+
+  if (roll < 0.10 + probYes) {
+    // An Extra Roll buys a win past the weekly limit, so it counts like any other win.
+    data.yes_count += 1;
+    saveWeekData(data);
+    return { outcome: 'YES', message: "Yes 🥵" };
+  }
+
+  return { outcome: 'NO', message: "No 🥶" };
 };
+
+export const rollWithLimit = (forceBypass: boolean = false): string =>
+  rollWithLimitDetailed(forceBypass).message;
 
 export const checkMultiple = (): string => {
   const result = Math.random() < 0.5 ? "No" : "Yes";

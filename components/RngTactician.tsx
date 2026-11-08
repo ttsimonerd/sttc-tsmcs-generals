@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { rollWithLimit, checkMultiple, getMaterials, loadWeekData, resetWins, getEdgeSupply } from '../services/rngService';
-import { RiddleResponse, FailedLog, ActionLog, Material, ItemAction } from '../types';
-import { getPoints, canClaimDailyBonus, claimDailyBonus, ITEM_IDS, useFromInventory, getInventoryCount, addPointsWithMultiplier, getDoublePointsRemaining, processItemAction } from '../services/pointsService';
+import { rollWithLimitDetailed, checkMultiple, getMaterials, loadWeekData, resetWins, getEdgeSupply } from '../services/rngService';
+import type { RollOutcome } from '../services/rngService';
+import { ItemAction } from '../types';
+import type { RiddleResponse, FailedLog, ActionLog, Material } from '../types';
+import { getPoints, canClaimDailyBonus, claimDailyBonus, ITEM_IDS, useFromInventory, getInventoryCount, addPointsWithMultiplier, getDoublePointsRemaining, processItemAction, addToInventory } from '../services/pointsService';
 
 // Local type aliases to avoid inline generic unions in hooks (Babel parsing workaround)
 type Step = 'IDLE' | 'ROLLING' | 'ROLLED' | 'MULTIPLE_OFFER' | 'MATERIALS_OFFER' | 'SHOW_MATERIALS';
-type ResultAnimation = 'idle' | 'pulse' | 'glow';
 type RedeemerStatus = 'IDLE' | 'CORRECT' | 'WRONG';
 
 import { getRiddles } from '../services/riddleService';
+import { PageHeader, Panel, Stat } from './ui/Primitives';
 
 // All possible results for the roulette (used for actual game logic)
 const ROULETTE_RESULTS = ['No 🥶', 'Yes 🥵', 'No 🥶', 'Yes 🥵', 'Dont Break The Rule!', 'Edge 7 days... 🥴'];
@@ -18,16 +20,16 @@ const RouletteWheel: React.FC<{
   isSpinning: boolean;
   onComplete: (result: string) => void;
   finalResult: string;
-}> = ({ isSpinning, onComplete, finalResult }) => {
+  finalOutcome: RollOutcome;
+}> = ({ isSpinning, onComplete, finalResult, finalOutcome }) => {
   const wheelRef = useRef(null as HTMLDivElement | null);
   const [rotation, setRotation] = useState(0);
   const [showResult, setShowResult] = useState(false);
-  const [resultAnimation, setResultAnimation] = useState('idle' as ResultAnimation);
   const animationRef = useRef(null as number | null);
   const rotationRef = useRef(0 as number);
 
   const segmentAngle = 360 / ROULETTE_RESULTS.length;
-  const isEdgeResult = finalResult.includes('Edge');
+  const isEdgeResult = finalOutcome === 'EDGE';
 
   // Spin to the exact segment center under the top pointer
   useEffect(() => {
@@ -36,10 +38,17 @@ const RouletteWheel: React.FC<{
       return;
     }
 
-    const targetIndex = ROULETTE_RESULTS.findIndex(
-      (r) => (finalResult.includes('Edge') && r.includes('Edge')) || r === finalResult
-    );
-    if (targetIndex === -1) return;
+    // Map the outcome onto a wheel segment. This must always resolve: a message that
+    // matched no segment (a custom weekend message, say) used to abort the animation, so
+    // the wheel spun forever and onComplete never fired.
+    const segmentByOutcome: Record<RollOutcome, number> = {
+      YES: 1,
+      NO: 0,
+      LIMIT: 4,
+      BLOCKED: 4,
+      EDGE: ROULETTE_RESULTS.findIndex((r) => r.includes('Edge')),
+    };
+    const targetIndex = Math.max(0, segmentByOutcome[finalOutcome]);
 
     const extraTurns = 4 * 360; // 4 full spins
     const segmentCenter = targetIndex * segmentAngle + segmentAngle / 2;
@@ -72,8 +81,6 @@ const RouletteWheel: React.FC<{
         rotationRef.current = end;
         setRotation(end);
         setShowResult(true);
-        setResultAnimation('pulse');
-        setTimeout(() => setResultAnimation('glow'), 250);
         onComplete(finalResult);
       }
     };
@@ -83,13 +90,12 @@ const RouletteWheel: React.FC<{
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [isSpinning, finalResult, segmentAngle, isEdgeResult, onComplete]);
+  }, [isSpinning, finalOutcome, segmentAngle, isEdgeResult, onComplete]);
 
   // Reset result visuals when not spinning
   useEffect(() => {
     if (!isSpinning) {
       setShowResult(false);
-      setResultAnimation('idle');
     }
   }, [isSpinning]);
 
@@ -222,8 +228,12 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
   const [actionLogs, setActionLogs] = useState([] as ActionLog[]);
 
   // Rolling state
-  const [isRolling, setIsRolling] = useState(false);
+  const [, setIsRolling] = useState(false);
+  const [rollOutcome, setRollOutcome] = useState('NO' as RollOutcome);
   const rollingResultRef = useRef('' as string);
+  const rollingOutcomeRef = useRef('NO' as RollOutcome);
+  // Prevents a restarted wheel animation from paying out the same roll twice.
+  const settledRef = useRef(true);
 
   // Points state
   const [currentPoints, setCurrentPoints] = useState(0);
@@ -279,26 +289,42 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
   const handleRoll = (forceBypass: boolean = false) => {
     setShowUseExtraRoll(false);
 
-    // Pre-calculate the result
-    let result = rollWithLimit();
+    let outcome: RollOutcome;
+    let result: string;
 
-    // If hitting limit and we have Extra Roll, offer to use it
-    if (result === "Dont Break The Rule!" && extraRollCount > 0 && !forceBypass) {
-      setShowUseExtraRoll(true);
-      setRollResult(result);
-      return;
-    }
+    if (forceBypass) {
+      // Spend the Extra Roll first so a result can never be rolled for free.
+      if (!useFromInventory(ITEM_IDS.EXTRA_ROLL)) {
+        addToLog('No Extra Roll available.', 'error');
+        return;
+      }
+      setExtraRollCount(getInventoryCount(ITEM_IDS.EXTRA_ROLL));
+      addToLog('🎲 Used Extra Roll!', 'warning');
 
-    // If forceBypass is true, we're using an Extra Roll
-    if (forceBypass && result === "Dont Break The Rule!") {
-      if (useFromInventory(ITEM_IDS.EXTRA_ROLL)) {
-        // Use the unified roll logic but with bypass enabled
-        result = rollWithLimit(true);
-        addToLog('🎲 Used Extra Roll!', 'warning');
+      const bypassed = rollWithLimitDetailed(true);
+      outcome = bypassed.outcome;
+      result = bypassed.message;
+
+      // Extra Rolls cannot buy past the weekend restriction: give the item back.
+      if (outcome === 'BLOCKED') {
+        addToInventory(ITEM_IDS.EXTRA_ROLL);
         setExtraRollCount(getInventoryCount(ITEM_IDS.EXTRA_ROLL));
+      }
+    } else {
+      const roll = rollWithLimitDetailed(false);
+      outcome = roll.outcome;
+      result = roll.message;
+
+      // Hit the weekly limit with Extra Rolls in the bag: offer to spend one.
+      if (outcome === 'LIMIT' && extraRollCount > 0) {
+        setShowUseExtraRoll(true);
+        setRollResult(result);
+        return;
       }
     }
 
+    settledRef.current = false;
+    rollingOutcomeRef.current = outcome;
     setIsRolling(true);
     setStep('ROLLING');
     setMaterials([]);
@@ -322,14 +348,21 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
   }, [isRedirecting, redirectCountdown, onRedirectionTriggered, redirectSupply]);
 
   const handleRollingComplete = (result: string) => {
+    // A restarted animation must never settle the same roll twice.
+    if (settledRef.current) return;
+    settledRef.current = true;
+
+    const outcome = rollingOutcomeRef.current;
+
     setIsRolling(false);
     setRollResult(result);
+    setRollOutcome(outcome);
     setStep('ROLLED');
     refreshStats();
 
 
-    // Award points based on result (with double points multiplier)
-    if (result.includes('Yes') && !result.includes('Edge')) {
+    // Award points based on outcome (with double points multiplier)
+    if (outcome === 'YES') {
       // Win = +20 points (or 40 with double points)
       const { doubled } = addPointsWithMultiplier(20);
       addToLog(`+${doubled ? 40 : 20} points for winning!${doubled ? ' (2x!)' : ''}`, 'success');
@@ -341,7 +374,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
       const isPunishmentRedirection = Math.random() < redirectionProbability;
       if (isPunishmentRedirection) {
         // Get the supply that would have been awarded
-        const potentialSupply = getMaterials(1)[0].name;
+        const potentialSupply = getMaterials(1)[0]?.name ?? 'special supply';
         setRedirectSupply(potentialSupply);
         setRedirectCountdown(5); // Reset countdown to 5 seconds
         setIsRedirecting(true);
@@ -354,7 +387,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
     }
 
     // Edge result = +50 points (or 100 with double points)
-    if (result.includes('Edge')) {
+    if (outcome === 'EDGE') {
       const { doubled } = addPointsWithMultiplier(50);
       addToLog(`+${doubled ? 100 : 50} points for Edge result!${doubled ? ' (2x!)' : ''}`, 'success');
 
@@ -496,11 +529,11 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto px-4">
+    <div className="space-y-7">
       {/* Punishment Redirection Warning */}
       {isRedirecting && (
         <div className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-fade-in backdrop-blur-xl">
-          <div className="max-w-md w-full glass-panel p-8 border border-red-500/30 text-center space-y-6 relative overflow-hidden">
+          <Panel tone="danger" className="relative w-full max-w-md space-y-6 overflow-hidden p-8 text-center">
             {/* Simple flickering background effect */}
             <div className="absolute inset-0 bg-red-500/5 animate-pulse"></div>
 
@@ -518,52 +551,44 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 </div>
               </div>
             </div>
-          </div>
+          </Panel>
         </div>
       )}
-      <div className="space-y-2 text-center">
-        <h2 className="text-3xl font-bold text-white">The Arbiter</h2>
-        <p className="text-zinc-400">Weekly Probability & Supply Allocation System.</p>
-      </div>
+      <PageHeader
+        eyebrow="Weekly allocation"
+        title="The Arbiter"
+        description="Three wins per week. Probabilities shift by weekday, and Edge always takes its fixed 10%."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column: Stats & Redeemer */}
         <div className="md:col-span-1 space-y-6">
           {/* Stats Panel */}
-          <div className="glass-panel p-6 rounded-2xl space-y-4 h-fit border border-emerald-500/20">
-            <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest">System Status</div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-400">Week No.</span>
-                <span className="font-mono text-emerald-400 font-bold">{weekData.week_number}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-400">Wins Acquired</span>
-                <span className={`font-mono font-bold ${weekData.yes_count >= 3 ? 'text-red-500' : 'text-emerald-400'}`}>
-                  {weekData.yes_count} / 3
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-zinc-400">Points</span>
-                <span className="font-mono text-amber-400 font-bold">💰 {currentPoints}</span>
-              </div>
+          <Panel tone="accent" className="h-fit space-y-4 p-5">
+            <div className="flex items-center justify-between gap-2">
+              <p className="eyebrow">System status</p>
+              <span className="chip">Week {weekData.week_number}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Stat label="Wins" value={`${weekData.yes_count} / 3`} tone={weekData.yes_count >= 3 ? 'danger' : 'primary'} />
+              <Stat label="Points" value={currentPoints} tone="warning" />
             </div>
 
             {/* Daily Bonus */}
             {showDailyBonus && (
               <button
                 onClick={handleClaimDailyBonus}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold rounded-xl hover:scale-105 transition-all animate-pulse"
+                className="w-full rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2.5 text-[11px] font-bold uppercase tracking-wider text-amber-300 transition-colors hover:bg-amber-400/20"
               >
-                🎁 Claim Daily Bonus (+5 pts)
+                Claim daily bonus · +5
               </button>
             )}
-          </div>
+          </Panel>
 
           {/* Operation History Log */}
-          <div className="glass-panel p-6 rounded-2xl space-y-4 border border-zinc-800 animate-fade-in max-h-[300px] flex flex-col">
+          <Panel className="flex max-h-[300px] animate-fade-in flex-col space-y-4 p-5">
             <div className="flex items-center justify-between shrink-0">
-              <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Supply History</div>
+              <p className="eyebrow">Supply history</p>
               {actionLogs.length > 0 && (
                 <button onClick={() => setActionLogs([])} className="text-[10px] text-zinc-600 hover:text-emerald-400 uppercase">
                   Clear
@@ -593,11 +618,11 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 ))
               )}
             </div>
-          </div>
+          </Panel>
 
           {/* The Redeemer Panel */}
           <div
-            className={`glass-panel p-6 rounded-2xl space-y-4 border relative overflow-hidden transition-all duration-500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10'
+            className={`relative space-y-4 overflow-hidden rounded-[18px] border p-5 transition-all duration-500 ${redeemerOpen ? 'border-red-500/50 bg-red-900/20 shadow-[0_0_30px_rgba(220,38,38,0.2)]' : 'border-red-500/10 bg-[#0b0d12]'
               }`}
           >
             {redeemerOpen && <div className="absolute inset-0 bg-red-900/5 pointer-events-none animate-pulse"></div>}
@@ -703,9 +728,9 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
           {/* Failure Archive (Log) */}
           {failedLogs.length > 0 && (
-            <div className="glass-panel p-6 rounded-2xl space-y-4 border border-zinc-800 animate-fade-in">
+            <Panel className="space-y-4 p-5 animate-fade-in">
               <div className="flex items-center justify-between">
-                <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Failure Archive</div>
+                <p className="eyebrow">Failure archive</p>
                 <button onClick={() => setFailedLogs([])} className="text-[10px] text-zinc-600 hover:text-red-400 uppercase">
                   Clear
                 </button>
@@ -727,17 +752,17 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                   </div>
                 ))}
               </div>
-            </div>
+            </Panel>
           )}
         </div>
 
         {/* Main Interface */}
-        <div className="md:col-span-2 glass-panel p-8 rounded-2xl min-h-[400px] flex flex-col items-center justify-center text-center space-y-6 relative overflow-hidden">
+        <Panel tone="accent" className="relative flex min-h-[420px] flex-col items-center justify-center space-y-6 overflow-hidden p-6 text-center md:col-span-2 sm:p-8">
           <div className="absolute inset-0 noise-bg opacity-10 pointer-events-none"></div>
 
           {step === 'IDLE' && (
             <>
-              <RouletteWheel isSpinning={false} onComplete={() => { }} finalResult="" />
+              <RouletteWheel isSpinning={false} onComplete={() => { }} finalResult="" finalOutcome="NO" />
 
               {/* Extra Roll Offer Modal */}
               {showUseExtraRoll && (
@@ -765,7 +790,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 <>
                   <button
                     onClick={() => handleRoll(false)}
-                    className="px-10 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xl transition-all hover:scale-105 shadow-[0_0_20px_rgba(16,185,129,0.3)] active:scale-95"
+                    className="h-14 rounded-2xl bg-theme-primary px-10 text-base font-bold uppercase tracking-wider text-black shadow-lg transition-all hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]"
                   >
                     INITIATE ROLL
                   </button>
@@ -793,7 +818,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
 
           {step === 'ROLLING' && (
             <div className="flex flex-col items-center gap-4">
-              <RouletteWheel isSpinning={true} onComplete={handleRollingComplete} finalResult={rollingResultRef.current} />
+              <RouletteWheel isSpinning={true} onComplete={handleRollingComplete} finalResult={rollingResultRef.current} finalOutcome={rollingOutcomeRef.current} />
               <p className="font-mono text-emerald-400 animate-pulse text-lg">DETERMINING FATE...</p>
             </div>
           )}
@@ -803,32 +828,33 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
               <div className="space-y-2">
                 <p className="text-zinc-400 uppercase tracking-widest text-xs animate-fade-in-up">Outcome</p>
                 <h2
-                  className={`text-6xl font-black ${rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
-                    ? 'text-emerald-400 animate-success-pop'
-                    : rollResult.includes('Rule') || rollResult.includes('Weekend')
-                      ? 'text-yellow-500 animate-warning-pulse'
-                      : rollResult.includes('Edge')
+                  className={`text-6xl font-black ${
+                    rollOutcome === 'YES'
+                      ? 'text-emerald-400 animate-success-pop'
+                      : rollOutcome === 'EDGE'
                         ? 'text-purple-400 animate-success-pop'
-                        : 'text-red-500 animate-failure-shake'
-                    }`}
+                        : rollOutcome === 'NO'
+                          ? 'text-red-500 animate-failure-shake'
+                          : 'text-yellow-500 animate-warning-pulse'
+                  }`}
                 >
                   <span
-                    className={
-                      rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && !rollResult.includes('Edge')
-                        ? 'animate-success-glow inline-block'
-                        : rollResult.includes('Rule') || rollResult.includes('Weekend')
-                          ? 'animate-holographic inline-block'
-                          : rollResult.includes('Edge')
-                            ? 'animate-purple-glow inline-block'
-                            : 'animate-failure-glow inline-block'
-                    }
+                    className={`inline-block ${
+                      rollOutcome === 'YES'
+                        ? 'animate-success-glow'
+                        : rollOutcome === 'EDGE'
+                          ? 'animate-purple-glow'
+                          : rollOutcome === 'NO'
+                            ? 'animate-failure-glow'
+                            : 'animate-holographic'
+                    }`}
                   >
                     {rollResult}
                   </span>
                 </h2>
 
                 {/* Success celebration particles */}
-                {rollResult.includes('Yes') && !rollResult.includes('Rule') && !rollResult.includes('Weekend') && (
+                {rollOutcome === 'YES' && (
                   <div className="flex justify-center gap-2 mt-4">
                     {[...Array(6)].map((_, i) => (
                       <div
@@ -841,7 +867,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 )}
 
                 {/* Edge result celebration particles */}
-                {rollResult.includes('Edge') && (
+                {rollOutcome === 'EDGE' && (
                   <div className="flex justify-center gap-2 mt-4">
                     {[...Array(8)].map((_, i) => (
                       <div
@@ -854,18 +880,18 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 )}
 
                 {/* Failure effect */}
-                {(!rollResult.includes('Yes') || rollResult.includes('Rule') || rollResult.includes('Weekend')) && (
+                {rollOutcome !== 'YES' && (
                   <div className="flex justify-center mt-4">
                     <div className="px-4 py-2 rounded-full bg-white/5 border border-white/10">
                       <span
-                        className={`text-sm font-mono ${rollResult.includes('Rule') || rollResult.includes('Weekend') || rollResult.includes('Edge')
-                          ? 'text-yellow-500 animate-warning-shake inline-block'
-                          : 'text-red-400 animate-failure-pulse inline-block'
+                        className={`text-sm font-mono inline-block ${rollOutcome === 'NO'
+                          ? 'text-red-400 animate-failure-pulse'
+                          : 'text-yellow-500 animate-warning-shake'
                           }`}
                       >
-                        {rollResult.includes('Rule') || rollResult.includes('Weekend')
+                        {rollOutcome === 'LIMIT' || rollOutcome === 'BLOCKED'
                           ? '⚠ SPECIAL CONDITION'
-                          : rollResult.includes('Edge')
+                          : rollOutcome === 'EDGE'
                             ? '🎲 EDGE RESULT'
                             : '✗ REJECTED'}
                       </span>
@@ -953,13 +979,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 </div>
               )}
 
-              {(rollResult.includes('No') ||
-                rollResult.includes('Rule') ||
-                rollResult.includes('Weekend') ||
-                rollResult.includes('Edge') ||
-                (step === 'ROLLED' && rollResult === 'Yes 🥵' && !multipleResult) ||
-                materials.length > 0 ||
-                multipleResult === 'No') && (
+              {(step === 'ROLLED' || (step === 'SHOW_MATERIALS' && materials.length > 0)) && (
                   <button
                     onClick={() => {
                       setStep('IDLE');
@@ -974,7 +994,7 @@ const RngTactician: React.FC<RngTacticianProps> = ({ onRedirectionTriggered }) =
                 )}
             </div>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
   );

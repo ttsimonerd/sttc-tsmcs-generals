@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getPunishments, savePunishments } from '../services/pointsService';
-import { PunishmentOption } from '../types';
+import type { PunishmentOption } from '../types';
+import { Badge, Button, PageHeader, Panel } from './ui/Primitives';
+import { logAudit } from '../services/auditService';
 
 interface PunishmentWheelProps {
   isOwner?: boolean;
@@ -59,122 +61,127 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
     savePunishments(updated);
     setNewPunishment('');
     setNewDescription('');
+    logAudit('Added wheel segment', newOption.text);
   };
 
   const handleRemovePunishment = (id: string) => {
     const updated = punishments.filter(p => p.id !== id);
     setPunishments(updated);
     savePunishments(updated);
+    logAudit('Removed wheel segment', punishments.find(p => p.id === id)?.text);
   };
 
   const segmentAngle = punishments.length > 0 ? 360 / punishments.length : 360;
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Punishment Wheel</h1>
-          <p className="text-zinc-500 text-sm mt-1">Spin to receive your fate</p>
-          {forcedSupply && (
-            <p className="text-red-400 text-xs mt-1 font-mono">⚠️ Forced redirection - Lost supply: <span className="font-bold">{forcedSupply}</span></p>
-          )}
-        </div>
-        {isOwner && !forcedSupply && (
-          <button
-            onClick={() => setEditMode(!editMode)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
-              }`}
-          >
-            {editMode ? '✕ Close Editor' : '⚙ Edit Options'}
-          </button>
-        )}
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Configure"
+        title="Punishment wheel"
+        description={
+          forcedSupply
+            ? `Forced redirection. Lost supply: ${forcedSupply}`
+            : 'Spin to receive your fate. The owner can tune the segment list below.'
+        }
+        actions={
+          isOwner && !forcedSupply ? (
+            <Button variant={editMode ? 'danger' : 'ghost'} size="sm" onClick={() => setEditMode(!editMode)}>
+              {editMode ? 'Close editor' : 'Edit segments'}
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Edit Mode (Owner Only) */}
       {isOwner && editMode && (
-        <div className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4 animate-fade-in">
-          <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Manage Punishments</h2>
+        <Panel className="space-y-4 p-5 fade-in">
+          <div className="flex items-center justify-between gap-3">
+            <p className="eyebrow">Manage segments</p>
+            <Badge>{punishments.length} segments</Badge>
+          </div>
 
-          {/* Add new */}
-          <div className="flex flex-col gap-3">
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)_auto]">
             <input
               type="text"
               value={newPunishment}
               onChange={(e) => setNewPunishment(e.target.value)}
-              placeholder="Enter new punishment..."
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+              placeholder="New punishment…"
+              aria-label="New punishment"
+              className="field"
               onKeyDown={(e) => e.key === 'Enter' && handleAddPunishment()}
             />
             <input
               type="text"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Description (use {supply} for dynamic text)..."
-              className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-emerald-500/50 text-sm"
+              placeholder="Description — {supply} is replaced at runtime"
+              aria-label="Punishment description"
+              className="field"
               onKeyDown={(e) => e.key === 'Enter' && handleAddPunishment()}
             />
-            <button
-              onClick={handleAddPunishment}
-              disabled={!newPunishment.trim()}
-              className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-medium text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <Button variant="primary" onClick={handleAddPunishment} disabled={!newPunishment.trim()}>
               Add
-            </button>
+            </Button>
           </div>
 
-          {/* List */}
-          <div className="space-y-2 max-h-[200px] overflow-y-auto custom-scrollbar">
+          <div className="max-h-[240px] space-y-1.5 overflow-y-auto pr-1 custom-scrollbar">
             {punishments.map((p, i) => (
-              <div key={p.id} className="flex items-center justify-between p-3 bg-zinc-900/50 rounded-lg border border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }} />
-                  <span className="text-white text-sm">{p.text}</span>
-                  {p.description && <span className="text-zinc-500 text-[10px] italic">({p.description.slice(0, 20)}...)</span>}
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--line)] bg-black/25 px-3 py-2"
+              >
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span
+                    className="h-3 w-3 shrink-0 rounded-full"
+                    style={{ backgroundColor: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }}
+                  />
+                  <span className="truncate text-[13px] text-zinc-100">{p.text}</span>
+                  {p.description && (
+                    <span className="hidden truncate text-[10px] text-zinc-600 sm:block">{p.description}</span>
+                  )}
                 </div>
                 <button
+                  type="button"
                   onClick={() => handleRemovePunishment(p.id)}
-                  className="text-red-400 hover:text-red-300 text-sm"
+                  aria-label={`Remove ${p.text}`}
+                  className="shrink-0 rounded-lg p-1.5 text-zinc-600 transition-colors hover:bg-red-500/10 hover:text-red-300"
                 >
-                  ✕
+                  <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
       )}
 
-      {/* Forced Mode Warning Banner */}
       {forcedSupply && !result && (
-        <div className="glass-panel p-6 rounded-2xl border border-red-500/50 bg-red-500/10 animate-pulse">
-          <div className="flex items-center gap-4">
-            <span className="text-4xl">💀</span>
-            <div>
-              <h3 className="text-red-400 font-bold text-lg">MANDATORY PUNISHMENT</h3>
-              <p className="text-zinc-400 text-sm">You must spin the wheel to continue. Lost supply: <span className="text-red-300 font-bold">{forcedSupply}</span></p>
-            </div>
+        <Panel tone="danger" className="p-5">
+          <div className="flex items-center gap-3">
+            <Badge tone="danger">Mandatory</Badge>
+            <p className="text-sm text-zinc-300">
+              You must spin the wheel to continue. Lost supply:{' '}
+              <span className="font-semibold text-red-300">{forcedSupply}</span>
+            </p>
           </div>
-        </div>
+        </Panel>
       )}
 
-      {/* Wheel */}
-      <div className="flex flex-col items-center gap-8">
-        <div className="relative w-72 h-72 sm:w-96 sm:h-96">
-          {/* Pointer */}
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-20">
-            <div className="w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-t-[28px] border-t-white drop-shadow-lg" />
+      <div className="flex flex-col items-center gap-7">
+        <div className="relative h-72 w-72 sm:h-96 sm:w-96">
+          <div className="absolute -top-4 left-1/2 z-20 -translate-x-1/2">
+            <div className="h-0 w-0 border-l-[16px] border-r-[16px] border-t-[28px] border-l-transparent border-r-transparent border-t-white drop-shadow-lg" />
           </div>
 
-          {/* Wheel */}
           <div
             ref={wheelRef}
-            className="w-full h-full rounded-full shadow-2xl overflow-hidden"
+            className="h-full w-full overflow-hidden rounded-full border border-[color:var(--line-strong)] shadow-2xl"
             style={{
               transform: `rotate(${rotation}deg)`,
               transition: isSpinning ? 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)' : 'none',
             }}
           >
-            <svg viewBox="0 0 200 200" className="w-full h-full">
+            <svg viewBox="0 0 200 200" className="h-full w-full">
               {punishments.map((punishment, i) => {
                 const startAngle = i * segmentAngle;
                 const endAngle = (i + 1) * segmentAngle;
@@ -194,7 +201,7 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
 
                 return (
                   <g key={punishment.id}>
-                    <path d={d} fill={SEGMENT_COLORS[i % SEGMENT_COLORS.length]} stroke="#1f1f23" strokeWidth="1" />
+                    <path d={d} fill={SEGMENT_COLORS[i % SEGMENT_COLORS.length]} stroke="#0b0d12" strokeWidth="1" />
                     <text
                       x={textX}
                       y={textY}
@@ -211,50 +218,38 @@ const PunishmentWheel: React.FC<PunishmentWheelProps> = ({ isOwner = false, forc
                   </g>
                 );
               })}
-              {/* Center circle */}
-              <circle cx="100" cy="100" r="20" fill="#1f1f23" stroke="#3f3f46" strokeWidth="2" />
-              <text x="100" y="100" fill="white" fontSize="16" textAnchor="middle" dominantBaseline="middle">
-                🎯
+              <circle cx="100" cy="100" r="22" fill="#0b0d12" stroke="#3f3f46" strokeWidth="2" />
+              <text x="100" y="100" fill="#a1a1aa" fontSize="7" fontWeight="bold" textAnchor="middle" dominantBaseline="middle" letterSpacing="1">
+                SPIN
               </text>
             </svg>
           </div>
         </div>
 
-        {/* Spin button */}
-        <button
-          onClick={spinWheel}
-          disabled={isSpinning || punishments.length === 0}
-          className="px-10 py-4 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white rounded-xl font-bold text-xl transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-        >
-          {isSpinning ? 'SPINNING...' : '🎰 SPIN THE WHEEL'}
-        </button>
+        <Button variant="danger" size="lg" onClick={spinWheel} disabled={isSpinning || punishments.length === 0} className="px-10">
+          {isSpinning ? 'Spinning…' : 'Spin the wheel'}
+        </Button>
       </div>
 
-      {/* Result */}
       {result && (
-        <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center space-y-4 animate-fade-in">
-          <p className="text-zinc-400 uppercase tracking-widest text-xs">Your Punishment</p>
-
-          <div className="text-4xl sm:text-5xl font-black py-4 text-white">
-            {result.text}
-          </div>
-
+        <Panel className="space-y-4 p-6 text-center fade-in">
+          <p className="eyebrow">Your punishment</p>
+          <p className="text-3xl font-bold tracking-tight text-white sm:text-4xl">{result.text}</p>
           {result.description && (
-            <div className="bg-white/5 border border-white/10 p-4 rounded-xl text-zinc-300 text-sm italic">
-              " {result.description.replace('{supply}', forcedSupply || 'special equipment')} "
-            </div>
+            <p className="mx-auto max-w-xl rounded-xl border border-[color:var(--line)] bg-black/30 p-4 text-sm italic text-zinc-300">
+              “{result.description.replace('{supply}', forcedSupply || 'special equipment')}”
+            </p>
           )}
-
-          <button
+          <Button
+            variant="danger"
             onClick={() => {
               setResult(null);
               if (onComplete) onComplete();
             }}
-            className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-400 hover:to-orange-400 text-white rounded-xl font-bold transition-all hover:scale-105 shadow-lg"
           >
-            ☠️ Accept Fate
-          </button>
-        </div>
+            Accept fate
+          </Button>
+        </Panel>
       )}
     </div>
   );

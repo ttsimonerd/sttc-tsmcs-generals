@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { spendPoints, getPoints, addPointsWithMultiplier } from '../services/pointsService';
 import confetti from 'canvas-confetti';
+import { Badge, Button, PageHeader, Panel, cn } from './ui/Primitives';
 
 type GameState = 'IDLE' | 'RISING' | 'CASHED_OUT' | 'CRASHED';
 
@@ -49,10 +50,13 @@ const CrashGame: React.FC = () => {
     lastCrashRef.current = crashPoint;
 
     const startTime = performance.now();
+    // Owner-tunable growth rate: the round reaches its crash point after 1/speed seconds,
+    // so a higher speed means less time to cash out.
+    const speed = config.speed > 0 ? config.speed : 0.5;
 
     const animate = (now: number) => {
       const elapsed = (now - startTime) / 1000;
-      const newMultiplier = 1 + Math.pow(elapsed * 0.5, 2) * (crashPoint - 1);
+      const newMultiplier = 1 + Math.pow(elapsed * speed, 2) * (crashPoint - 1);
       setMultiplier(Math.min(newMultiplier, crashPoint));
 
       if (newMultiplier >= crashPoint) {
@@ -116,167 +120,191 @@ const CrashGame: React.FC = () => {
     return 'text-red-400';
   };
 
+  const pillTone = (crash: number) =>
+    crash < 2 ? 'text-red-300' : crash < 5 ? 'text-amber-300' : 'text-emerald-300';
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-white">Crash</h2>
-        <p className="text-zinc-400">Cash out before it crashes!</p>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-4 glass-panel p-4 rounded-xl border border-white/10">
-        <div className="text-zinc-400 text-sm">
-          <span className="text-white font-bold">{points}</span> pts
-        </div>
-        <div className="flex gap-2">
-          {history.slice(0, 5).map((crash, i) => (
-            <span
-              key={i}
-              className={`text-xs px-2 py-1 rounded ${crash < 2 ? 'bg-red-500/20 text-red-400' :
-                  crash < 5 ? 'bg-yellow-500/20 text-yellow-400' :
-                    'bg-green-500/20 text-green-400'
-                }`}
-            >
-              {crash.toFixed(2)}x
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="glass-panel p-8 rounded-2xl border border-white/10 text-center space-y-6">
-        <div className="relative">
-          <div className={`text-6xl md:text-7xl font-black font-mono ${getMultiplierColor()} transition-colors duration-300`}>
-            {multiplier.toFixed(2)}x
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Mini game"
+        title="Crash"
+        description="The multiplier climbs until it breaks. Cash out before it does."
+        actions={
+          <div className="chip">
+            <span className="text-zinc-500">SP</span>
+            <span className="font-bold tabular-nums text-white">{points}</span>
           </div>
-          {gameState === 'CASHED_OUT' && (
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-black text-sm font-bold px-3 py-1 rounded-full animate-bounce">
-              CASHED OUT! +{payout} pts{wasDoubled && ' (2x!)'}
-            </div>
-          )}
-          {gameState === 'CRASHED' && (
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded-full animate-shake">
-              CRASHED @ {lastCrashRef.current.toFixed(2)}x
-            </div>
-          )}
-        </div>
+        }
+      />
 
-        <div className="h-4 bg-zinc-800 rounded-full overflow-hidden relative">
-          <div
-            className={`absolute left-0 top-0 h-full transition-all duration-75 rounded-full ${multiplier < 2 ? 'bg-zinc-500' :
-                multiplier < 5 ? 'bg-emerald-500' :
-                  'bg-gradient-to-r from-yellow-500 to-red-500'
-              }`}
-            style={{ width: `${Math.min(100, (multiplier / 10) * 100)}%` }}
-          />
-        </div>
-
-        {gameState === 'IDLE' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={() => setBetAmount(Math.max(1, betAmount - 5))}
-                className="w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-white text-xl font-bold transition-all active:scale-95"
-              >
-                -
-              </button>
-              <div className="text-center">
-                <p className="text-zinc-500 text-xs uppercase tracking-widest">Bet Amount</p>
-                <p className="text-2xl font-bold text-white">{betAmount} pts</p>
-              </div>
-              <button
-                onClick={() => setBetAmount(Math.min(points, betAmount + 5))}
-                className="w-12 h-12 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-white text-xl font-bold transition-all active:scale-95"
-              >
-                +
-              </button>
-            </div>
-
-            <div className="flex justify-center gap-2">
-              {[10, 25, 50, 100].map(amount => (
-                <button
-                  key={amount}
-                  onClick={() => setBetAmount(Math.min(points, amount))}
-                  disabled={points < amount}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${betAmount === amount
-                      ? 'bg-emerald-500 text-white'
-                      : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
-                    } disabled:opacity-50`}
-                >
-                  {amount}
-                </button>
+      <Panel tone="muted" className="flex flex-wrap items-center justify-between gap-3 p-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] uppercase tracking-wider text-zinc-600">Recent</span>
+          {history.length === 0 ? (
+            <span className="text-xs text-zinc-600">No rounds yet</span>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {history.slice(0, 5).map((crash, i) => (
+                <span key={i} className={cn('rounded-md bg-white/[0.04] px-1.5 py-0.5 font-mono text-[11px] font-semibold', pillTone(crash))}>
+                  {crash.toFixed(2)}x
+                </span>
               ))}
             </div>
-
-            <button
-              onClick={startGame}
-              disabled={points < betAmount || betAmount < 1}
-              className="px-12 py-4 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white rounded-xl font-bold text-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              START CRASH
-            </button>
-          </div>
-        )}
-
-        {gameState === 'RISING' && (
-          <button
-            onClick={cashOut}
-            className="px-12 py-4 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black rounded-xl font-bold text-xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-yellow-500/25 animate-pulse"
-          >
-            CASH OUT @ {multiplier.toFixed(2)}x
-          </button>
-        )}
-
-        {(gameState === 'CASHED_OUT' || gameState === 'CRASHED') && (
-          <button
-            onClick={resetGame}
-            className="px-8 py-4 bg-zinc-700 hover:bg-zinc-600 text-white rounded-xl font-bold text-lg transition-all hover:scale-105 active:scale-95"
-          >
-            Play Again
-          </button>
-        )}
-      </div>
-
-      <div className="glass-panel p-6 rounded-xl border border-white/5">
-        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-3">Recent Crashes</h3>
-        <div className="flex flex-wrap gap-2">
-          {history.length === 0 ? (
-            <p className="text-zinc-600 text-sm italic">No games played yet</p>
-          ) : (
-            history.map((crash, i) => (
-              <span
-                key={i}
-                className={`px-3 py-1.5 rounded-lg text-sm font-bold ${crash < 2 ? 'bg-red-500/20 text-red-400' :
-                    crash < 5 ? 'bg-yellow-500/20 text-yellow-400' :
-                      crash < 10 ? 'bg-green-500/20 text-green-400' :
-                        'bg-purple-500/20 text-purple-400'
-                  }`}
-              >
-                {crash.toFixed(2)}x
-              </span>
-            ))
           )}
         </div>
-      </div>
+        <Badge tone={gameState === 'RISING' ? 'primary' : gameState === 'CRASHED' ? 'danger' : gameState === 'CASHED_OUT' ? 'warning' : 'default'}>
+          {gameState === 'RISING' ? 'In flight' : gameState === 'CRASHED' ? 'Crashed' : gameState === 'CASHED_OUT' ? 'Cashed out' : 'Idle'}
+        </Badge>
+      </Panel>
 
-      <div className="glass-panel p-6 rounded-xl border border-white/5 space-y-3">
-        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">How to Play</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-zinc-400">
-          <div className="space-y-1">
-            <p className="text-white font-medium">Goal</p>
-            <p>Cash out before the multiplier crashes!</p>
+      <Panel className="p-6 sm:p-8">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div>
+            <p className="eyebrow">{gameState === 'RISING' ? 'Live multiplier' : 'Multiplier'}</p>
+            <p
+              className={cn(
+                'mt-2 font-mono text-6xl font-black tabular-nums transition-colors duration-300 sm:text-7xl',
+                getMultiplierColor()
+              )}
+            >
+              {multiplier.toFixed(2)}x
+            </p>
+
+            {gameState === 'CASHED_OUT' && (
+              <p className="mt-2 text-sm font-semibold text-emerald-300">
+                Cashed out · +{payout} pts{wasDoubled ? ' · double points applied' : ''}
+              </p>
+            )}
+            {gameState === 'CRASHED' && (
+              <p className="mt-2 text-sm font-semibold text-red-300">
+                Crashed at {lastCrashRef.current.toFixed(2)}x
+              </p>
+            )}
           </div>
-          <div className="space-y-1">
-            <p className="text-white font-medium">Payout</p>
-            <p>Your bet x multiplier = winnings</p>
+
+          <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.06]">
+            <div
+              className={cn(
+                'h-full rounded-full transition-all duration-75',
+                multiplier < 2 ? 'bg-zinc-500' : multiplier < 5 ? 'bg-emerald-500' : 'bg-gradient-to-r from-amber-400 to-red-500'
+              )}
+              style={{ width: `${Math.min(100, (multiplier / 10) * 100)}%` }}
+            />
           </div>
-          <div className="space-y-1">
-            <p className="text-white font-medium">Risk</p>
-            <p>If you crash, you lose your bet!</p>
-          </div>
+
+          {gameState === 'IDLE' && (
+            <div className="w-full max-w-sm space-y-3">
+              <div className="flex items-center justify-between rounded-xl border border-[color:var(--line)] bg-black/25 px-3 py-2">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-500">Bet</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setBetAmount(Math.max(1, betAmount - 5))}
+                    aria-label="Decrease bet"
+                    className="grid h-7 w-7 place-items-center rounded-lg border border-[color:var(--line)] text-base leading-none text-zinc-300 transition-colors hover:border-[color:var(--line-strong)] hover:text-white"
+                  >
+                    −
+                  </button>
+                  <span className="w-20 text-center font-mono text-sm font-bold tabular-nums text-white">{betAmount} pts</span>
+                  <button
+                    type="button"
+                    onClick={() => setBetAmount(Math.min(points, betAmount + 5))}
+                    aria-label="Increase bet"
+                    className="grid h-7 w-7 place-items-center rounded-lg border border-[color:var(--line)] text-base leading-none text-zinc-300 transition-colors hover:border-[color:var(--line-strong)] hover:text-white"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-1.5">
+                {[10, 25, 50, 100].map(amount => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => setBetAmount(Math.min(points, amount))}
+                    disabled={points < amount}
+                    className={cn(
+                      'rounded-lg border px-2.5 py-1 font-mono text-[11px] font-semibold transition-all disabled:opacity-30',
+                      betAmount === amount
+                        ? 'border-theme-primary-soft bg-theme-primary-soft text-white'
+                        : 'border-[color:var(--line)] text-zinc-400 hover:border-[color:var(--line-strong)] hover:text-white'
+                    )}
+                  >
+                    {amount}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={startGame}
+                disabled={points < betAmount || betAmount < 1}
+                className="w-full"
+              >
+                Start round
+              </Button>
+            </div>
+          )}
+
+          {gameState === 'RISING' && (
+            <Button
+              size="lg"
+              onClick={cashOut}
+              className="w-full max-w-sm bg-amber-400 text-black hover:brightness-105"
+            >
+              Cash out at {multiplier.toFixed(2)}x
+            </Button>
+          )}
+
+          {(gameState === 'CASHED_OUT' || gameState === 'CRASHED') && (
+            <Button size="lg" variant="secondary" onClick={resetGame} className="w-full max-w-sm">
+              Play again
+            </Button>
+          )}
         </div>
+      </Panel>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Panel className="p-5">
+          <p className="eyebrow">Round history</p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {history.length === 0 ? (
+              <p className="text-xs text-zinc-600">No rounds played yet.</p>
+            ) : (
+              history.map((crash, i) => (
+                <span
+                  key={i}
+                  className={cn('rounded-lg bg-white/[0.04] px-2 py-1 font-mono text-xs font-semibold', pillTone(crash))}
+                >
+                  {crash.toFixed(2)}x
+                </span>
+              ))
+            )}
+          </div>
+        </Panel>
+
+        <Panel tone="muted" className="p-5 md:col-span-2">
+          <p className="eyebrow">How it works</p>
+          <div className="mt-3 grid gap-3 text-xs leading-relaxed text-zinc-500 sm:grid-cols-3">
+            <div>
+              <p className="text-[13px] font-medium text-zinc-200">Bet</p>
+              <p className="mt-0.5">Your stake is taken when the round starts.</p>
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-zinc-200">Cash out</p>
+              <p className="mt-0.5">Stake × multiplier is paid instantly.</p>
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-zinc-200">Crash</p>
+              <p className="mt-0.5">Miss the window and the stake is lost.</p>
+            </div>
+          </div>
+        </Panel>
       </div>
     </div>
   );
 };
 
 export default CrashGame;
-

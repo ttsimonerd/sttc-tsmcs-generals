@@ -16,18 +16,22 @@ import {
   hasVipBadge,
   processItemAction
 } from '../services/pointsService';
-import { ItemAction, ShopItem } from '../types';
+import { ItemAction } from '../types';
+import type { ShopItem } from '../types';
+import { PageHeader } from './ui/Primitives';
+import { useToast } from './ui/Toast';
+import { logAudit } from '../services/auditService';
 
 interface ShopProps {
   isOwner?: boolean;
 }
 
 const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
+  const { toast } = useToast();
   const [points, setPointsState] = useState(0);
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [purchasedItems, setPurchasedItems] = useState<string[]>([]);
   const [editMode, setEditMode] = useState(false);
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // VIP Choice state
   const [showVipReward, setShowVipReward] = useState(false);
@@ -35,7 +39,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
 
   // Mystery Box state
   const [showMysteryReward, setShowMysteryReward] = useState(false);
-  const [mysteryReward, setMysteryReward] = useState(0);
+  const [mysteryReward] = useState(0);
 
   // Double points timer
   const [doublePointsTime, setDoublePointsTime] = useState(0);
@@ -101,8 +105,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
   };
 
   const showNotif = (message: string, type: 'success' | 'error') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3000);
+    toast(message, type);
   };
 
   const handlePurchase = (item: ShopItem) => {
@@ -208,6 +211,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
     saveShopItems(updated);
     setNewItem({ name: '', description: '', price: 50, icon: '🎁', stock: -1, action: ItemAction.NONE, actionValue: 0 });
     showNotif("Item added!", 'success');
+    logAudit('Added shop item', item.name);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -215,6 +219,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
     setShopItems(updated);
     saveShopItems(updated);
     showNotif("Item removed!", 'success');
+    logAudit('Removed shop item');
   };
 
   const handleSaveVipChoice = () => {
@@ -230,6 +235,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
     setVipChoiceItem(updatedVip);
     setEditingVipChoice(false);
     showNotif("VIP Choice settings saved!", 'success');
+    logAudit('Updated VIP Choice', updatedVip.name);
   };
 
   // All shop items including VIP Choice from storage
@@ -237,41 +243,28 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with Points */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-white">Shop</h1>
-          <p className="text-zinc-500 text-sm mt-1">Spend your hard-earned points</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="px-6 py-3 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-xl">
-            <span className="text-amber-400 font-bold text-xl">💰 {points} pts</span>
-          </div>
-          {isOwner && (
+      <PageHeader
+        eyebrow="Economy"
+        title="Shop"
+        description="Spend social points on consumables, boosts and status."
+        actions={
+          isOwner ? (
             <button
               onClick={() => setEditMode(!editMode)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${editMode ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+              className={`h-9 rounded-xl border px-3 text-xs font-semibold transition-all ${editMode
+                ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                : 'border-[color:var(--line)] bg-white/[0.04] text-zinc-300 hover:border-[color:var(--line-strong)] hover:text-white'
                 }`}
             >
-              {editMode ? '✕ Close' : '⚙ Manage'}
+              {editMode ? 'Close editor' : 'Manage shop'}
             </button>
-          )}
-        </div>
-      </div>
-
-      {/* Notification */}
-      {notification && (
-        <div className={`p-4 rounded-xl border animate-fade-in ${notification.type === 'success'
-          ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400'
-          : 'bg-red-500/20 border-red-500/30 text-red-400'
-          }`}>
-          {notification.message}
-        </div>
-      )}
+          ) : undefined
+        }
+      />
 
       {/* Active Effects Banner */}
       {(doublePointsTime > 0 || inventoryCounts[ITEM_IDS.EXTRA_ROLL] > 0 || hasVipBadge()) && (
-        <div className="glass-panel p-4 rounded-xl border border-purple-500/20 space-y-2">
+        <div className="panel panel-accent space-y-2 p-4">
           <h3 className="text-xs font-bold text-purple-400 uppercase tracking-widest">Active Effects & Inventory</h3>
           <div className="flex flex-wrap gap-3">
             {doublePointsTime > 0 && (
@@ -301,7 +294,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       {/* VIP Reward Modal */}
       {showVipReward && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="glass-panel p-8 rounded-2xl border border-amber-500/30 max-w-lg w-full space-y-6 text-center">
+          <div className="panel panel-accent max-w-lg w-full space-y-6 p-8 text-center">
             <div>
               <span className="text-5xl animate-bounce inline-block">👑</span>
               <h2 className="text-2xl font-bold text-amber-400 mt-2">VIP Choice Acquired!</h2>
@@ -332,7 +325,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
       {/* Mystery Box Reward Modal */}
       {showMysteryReward && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="glass-panel p-8 rounded-2xl border border-purple-500/30 max-w-lg w-full space-y-6 text-center">
+          <div className="panel panel-accent max-w-lg w-full space-y-6 p-8 text-center">
             <div>
               <span className="text-5xl animate-bounce inline-block">📦</span>
               <h2 className="text-2xl font-bold text-purple-400 mt-2">Mystery Box Opened!</h2>
@@ -372,7 +365,7 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
 
       {/* Owner Edit Mode */}
       {isOwner && editMode && (
-        <div className="glass-panel p-6 rounded-2xl border border-white/10 space-y-4 animate-fade-in">
+        <div className="panel space-y-4 p-5 fade-in">
           <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">VIP Choice Settings</h2>
 
           {!editingVipChoice ? (
@@ -565,9 +558,9 @@ const Shop: React.FC<ShopProps> = ({ isOwner = false }) => {
           return (
             <div
               key={item.id}
-              className={`relative p-6 rounded-2xl border transition-all ${isVip
-                ? 'bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/30'
-                : 'bg-zinc-900/50 border-white/5 hover:bg-zinc-800/50'
+              className={`relative overflow-hidden rounded-2xl border p-5 transition-all duration-300 ${isVip
+                ? 'border-amber-400/30 bg-amber-400/[0.06]'
+                : 'border-[color:var(--line)] bg-white/[0.025] hover:border-[color:var(--line-strong)]'
                 }`}
             >
               {/* VIP badge */}

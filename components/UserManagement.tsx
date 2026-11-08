@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { UserRole } from '../types';
+import type { UserRole } from '../types';
 import { getPoints, setPoints, getItemInventory, saveItemInventory, hasVipBadge, setVipBadge, ITEM_IDS } from '../services/pointsService';
+import { Badge, Button, PageHeader, Panel, cn } from './ui/Primitives';
+import { useToast } from './ui/Toast';
+import { logAudit } from '../services/auditService';
 
 const UserManagement: React.FC = () => {
+    const { toast } = useToast();
     const USERS: UserRole[] = ['Owner', 'Gooner 💔🥀', 'Migueeeel [Beta Tester]'];
     const [selectedUser, setSelectedUser] = useState<UserRole>(USERS[0]);
     const [userData, setUserData] = useState({
@@ -11,7 +15,6 @@ const UserManagement: React.FC = () => {
         inventory: {} as Record<string, number>,
         password: ''
     });
-    const [notification, setNotification] = useState<string | null>(null);
 
     const loadUserData = (role: UserRole) => {
         const points = getPoints(role);
@@ -30,15 +33,11 @@ const UserManagement: React.FC = () => {
         loadUserData(selectedUser);
     }, [selectedUser]);
 
-    const showNotif = (msg: string) => {
-        setNotification(msg);
-        setTimeout(() => setNotification(null), 3000);
-    };
-
     const updatePoints = (newPoints: number) => {
         setPoints(newPoints, selectedUser);
         setUserData(prev => ({ ...prev, points: newPoints }));
-        showNotif('Points updated! 💰');
+        toast('Balance updated.', 'success');
+        logAudit('Updated balance', `${selectedUser} → ${newPoints} pts`);
     };
 
     const updatePassword = (newPass: string) => {
@@ -47,14 +46,16 @@ const UserManagement: React.FC = () => {
         passwords[selectedUser] = newPass;
         localStorage.setItem('custom-user-passwords', JSON.stringify(passwords));
         setUserData(prev => ({ ...prev, password: newPass }));
-        showNotif('Password updated! 🔐');
+        toast('Access phrase updated.', 'success');
+        logAudit('Updated access phrase', selectedUser);
     };
 
     const toggleVip = () => {
         const newState = !userData.hasVip;
         setVipBadge(newState, selectedUser);
         setUserData(prev => ({ ...prev, hasVip: newState }));
-        showNotif(newState ? 'VIP Granted! 👑' : 'VIP Revoked.');
+        toast(newState ? 'VIP granted.' : 'VIP revoked.', newState ? 'success' : 'info');
+        logAudit(newState ? 'Granted VIP' : 'Revoked VIP', selectedUser);
     };
 
     const updateInventory = (itemId: string, increment: boolean) => {
@@ -67,123 +68,153 @@ const UserManagement: React.FC = () => {
 
         saveItemInventory(newInv, selectedUser);
         setUserData(prev => ({ ...prev, inventory: newInv }));
-        showNotif('Inventory updated! 📦');
+        toast('Inventory updated.', 'success');
+        logAudit('Updated extra rolls', `${selectedUser} → ${next}`);
     };
 
+    const extraRolls = userData.inventory[ITEM_IDS.EXTRA_ROLL] || 0;
+    const isOwnerAccount = selectedUser === 'Owner';
+
     return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white">User Management</h1>
-                    <p className="text-zinc-500 text-sm mt-1">Manage accounts, balances, and permissions</p>
-                </div>
-                {notification && (
-                    <div className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded-lg animate-fade-in">
-                        <span className="text-emerald-400 text-sm font-medium">{notification}</span>
-                    </div>
-                )}
-            </div>
+        <div className="space-y-6">
+            <PageHeader
+                eyebrow="Configure"
+                title="Users"
+                description="Balances, access phrases, VIP status and consumables for every account."
+            />
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* User Sidebar */}
-                <div className="lg:col-span-1 space-y-3">
-                    {USERS.map(user => (
-                        <button
-                            key={user}
-                            onClick={() => setSelectedUser(user)}
-                            className={`w-full text-left p-4 rounded-xl border transition-all ${selectedUser === user
-                                    ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400'
-                                    : 'bg-zinc-900 border-white/5 text-zinc-400 hover:border-white/10 hover:text-white'
-                                }`}
-                        >
-                            <div className="font-bold truncate">{user}</div>
-                            <div className="text-[10px] uppercase tracking-widest mt-1 opacity-60">
-                                {user === 'Owner' ? 'Administrator' : 'User Account'}
-                            </div>
-                        </button>
-                    ))}
-                </div>
-
-                {/* Editor Main */}
-                <div className="lg:col-span-3 space-y-6">
-                    <div className="glass-panel p-8 rounded-2xl border border-white/10 space-y-8">
-                        <div className="flex items-center justify-between border-b border-white/5 pb-6">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-zinc-800 rounded-full flex items-center justify-center text-2xl">
-                                    {userData.hasVip ? '👑' : '👤'}
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">{selectedUser}</h2>
-                                    <p className="text-zinc-500 text-xs">Manage detailed user properties</p>
-                                </div>
-                            </div>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)]">
+                <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-col">
+                    {USERS.map(user => {
+                        const active = selectedUser === user;
+                        return (
                             <button
-                                onClick={toggleVip}
-                                className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${userData.hasVip
-                                        ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 hover:bg-amber-500/30'
-                                        : 'bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10'
-                                    }`}
+                                key={user}
+                                type="button"
+                                onClick={() => setSelectedUser(user)}
+                                aria-pressed={active}
+                                className={cn(
+                                    'flex min-w-0 items-center gap-2.5 rounded-xl border px-3 py-3 text-left transition-all lg:w-full',
+                                    active
+                                        ? 'border-theme-primary-soft bg-theme-primary-soft'
+                                        : 'border-[color:var(--line)] bg-white/[0.02] hover:border-[color:var(--line-strong)]'
+                                )}
                             >
-                                {userData.hasVip ? 'REVOKE VIP' : 'GRANT VIP STATUS'}
+                                <span
+                                    className={cn(
+                                        'grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[12px] font-bold',
+                                        active ? 'bg-theme-primary text-black' : 'bg-white/[0.06] text-zinc-400'
+                                    )}
+                                >
+                                    {user.slice(0, 1)}
+                                </span>
+                                <span className="min-w-0">
+                                    <span className={cn('block truncate text-[13px] font-medium', active ? 'text-white' : 'text-zinc-300')}>
+                                        {user}
+                                    </span>
+                                    <span className="mt-0.5 block text-[9px] uppercase tracking-[0.14em] text-zinc-600">
+                                        {isOwnerAccount && user === 'Owner' ? 'Administrator' : 'User account'}
+                                    </span>
+                                </span>
                             </button>
-                        </div>
+                        );
+                    })}
+                </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {/* Security */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Authentication</h3>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] text-zinc-600 uppercase ml-1">Access Passphrase</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={userData.password}
-                                            onChange={(e) => updatePassword(e.target.value)}
-                                            className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white font-mono text-sm focus:border-emerald-500/50 outline-none"
-                                        />
+                <div className="space-y-4">
+                    <Panel className="p-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--line)] pb-4">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <span
+                                    className={cn(
+                                        'grid h-11 w-11 shrink-0 place-items-center rounded-xl text-base font-bold',
+                                        userData.hasVip
+                                            ? 'border border-amber-400/30 bg-amber-400/10 text-amber-300'
+                                            : 'border border-[color:var(--line)] bg-white/[0.05] text-zinc-300'
+                                    )}
+                                >
+                                    {selectedUser.slice(0, 1)}
+                                </span>
+                                <div className="min-w-0">
+                                    <div className="flex items-center gap-2">
+                                        <p className="truncate text-[15px] font-semibold text-white">{selectedUser}</p>
+                                        {userData.hasVip && <Badge tone="warning">VIP</Badge>}
                                     </div>
+                                    <p className="mt-0.5 text-[11px] text-zinc-500">
+                                        {selectedUser === 'Owner' ? 'Full system access' : 'Player account'}
+                                    </p>
                                 </div>
                             </div>
+                            <Button variant={userData.hasVip ? 'danger' : 'secondary'} size="sm" onClick={toggleVip}>
+                                {userData.hasVip ? 'Revoke VIP' : 'Grant VIP'}
+                            </Button>
+                        </div>
 
-                            {/* Economy */}
-                            <div className="space-y-4">
-                                <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Economy</h3>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] text-zinc-600 uppercase ml-1">Total Points Balance</label>
-                                    <div className="flex items-center gap-4">
-                                        <input
-                                            type="number"
-                                            value={userData.points}
-                                            onChange={(e) => updatePoints(parseInt(e.target.value) || 0)}
-                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-amber-400 font-bold text-lg focus:border-emerald-500/50 outline-none"
-                                        />
-                                    </div>
-                                </div>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label className="field-label" htmlFor="user-password">Access phrase</label>
+                                <input
+                                    id="user-password"
+                                    type="text"
+                                    value={userData.password}
+                                    onChange={(e) => updatePassword(e.target.value)}
+                                    className="field field-mono"
+                                    autoComplete="off"
+                                    spellCheck={false}
+                                />
+                                <p className="mt-1.5 text-[10px] text-zinc-600">Saved as you type.</p>
+                            </div>
+
+                            <div>
+                                <label className="field-label" htmlFor="user-points">Points balance</label>
+                                <input
+                                    id="user-points"
+                                    type="number"
+                                    value={userData.points}
+                                    onChange={(e) => updatePoints(parseInt(e.target.value) || 0)}
+                                    className="field field-mono font-bold text-amber-300"
+                                />
+                                <p className="mt-1.5 text-[10px] text-zinc-600">Grants immediately.</p>
+                            </div>
+                        </div>
+                    </Panel>
+
+                    <Panel className="p-5">
+                        <div className="flex items-center justify-between gap-3">
+                            <p className="eyebrow">Consumables</p>
+                            <span className="text-[10px] uppercase tracking-wider text-zinc-600">Live inventory</span>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--line)] bg-black/25 px-4 py-3">
+                            <div className="min-w-0">
+                                <p className="text-[13px] font-medium text-white">Extra rolls</p>
+                                <p className="mt-0.5 text-[11px] text-zinc-500">Bypasses the weekend block once.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => updateInventory(ITEM_IDS.EXTRA_ROLL, false)}
+                                    aria-label="Remove one extra roll"
+                                    className="grid h-8 w-8 place-items-center rounded-lg border border-[color:var(--line)] text-lg leading-none text-zinc-300 transition-colors hover:border-[color:var(--line-strong)] hover:text-white"
+                                >
+                                    −
+                                </button>
+                                <span className="w-7 text-center font-mono text-sm font-bold text-white">{extraRolls}</span>
+                                <button
+                                    type="button"
+                                    onClick={() => updateInventory(ITEM_IDS.EXTRA_ROLL, true)}
+                                    aria-label="Add one extra roll"
+                                    className="grid h-8 w-8 place-items-center rounded-lg border border-[color:var(--line)] text-lg leading-none text-zinc-300 transition-colors hover:border-[color:var(--line-strong)] hover:text-white"
+                                >
+                                    +
+                                </button>
                             </div>
                         </div>
 
-                        {/* Inventory */}
-                        <div className="space-y-4 pt-4">
-                            <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Inventory Management</h3>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                {/* Extra Rolls */}
-                                <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-2xl">🎲</span>
-                                        <div>
-                                            <p className="text-white text-sm font-medium">Extra Rolls</p>
-                                            <p className="text-zinc-500 text-xs">Consumable items</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <button onClick={() => updateInventory(ITEM_IDS.EXTRA_ROLL, false)} className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 text-white">-</button>
-                                        <span className="text-white font-bold w-4 text-center">{userData.inventory[ITEM_IDS.EXTRA_ROLL] || 0}</span>
-                                        <button onClick={() => updateInventory(ITEM_IDS.EXTRA_ROLL, true)} className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 text-white">+</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                        <p className="mt-3 text-[10px] leading-relaxed text-zinc-600">
+                            Consumables are stored per account. Other supplies live in the player inventory.
+                        </p>
+                    </Panel>
                 </div>
             </div>
         </div>

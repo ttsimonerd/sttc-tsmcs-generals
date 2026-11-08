@@ -1,9 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { DayProbability, DEFAULT_DAYS, DEFAULT_WEEKEND_RESTRICTION } from '../types';
+import React, { useEffect, useState } from 'react';
+import { DEFAULT_DAYS, DEFAULT_WEEKEND_RESTRICTION } from '../types';
+import type { DayProbability } from '../types';
+import { Badge, Button, PageHeader, Panel, cn } from './ui/Primitives';
+import { useToast } from './ui/Toast';
+import { logAudit } from '../services/auditService';
 
 const STORAGE_KEY = 'probability_config';
 
 const ProbabilityConfig: React.FC = () => {
+  const { toast } = useToast();
   const [days, setDays] = useState<DayProbability[]>(DEFAULT_DAYS);
   const [weekendEnabled, setWeekendEnabled] = useState(DEFAULT_WEEKEND_RESTRICTION.enabled);
   const [weekendMessage, setWeekendMessage] = useState(DEFAULT_WEEKEND_RESTRICTION.message);
@@ -46,13 +51,15 @@ const ProbabilityConfig: React.FC = () => {
     setWeekendMessage(DEFAULT_WEEKEND_RESTRICTION.message);
     setPunishmentRedirectionProb(10);
     setIsDirty(true);
+    toast('Defaults restored. Save to apply them.', 'info');
+    logAudit('Restored default probabilities');
   };
 
   const handleSave = () => {
     // Validate that all probabilities sum to 90
     const invalidDay = days.find(day => day.yesProb + day.noProb !== 90);
     if (invalidDay) {
-      alert(`Invalid probability for ${invalidDay.dayName}. YES + NO must equal 90% (10% reserved for Edge).`);
+      toast(`${invalidDay.dayName}: YES + NO must equal 90% (10% is reserved for edge).`, 'error');
       return;
     }
 
@@ -75,6 +82,8 @@ const ProbabilityConfig: React.FC = () => {
     setTimeout(() => {
       setStatus('SAVED');
       setIsDirty(false);
+      toast('Probability config saved.', 'success');
+      logAudit('Saved probability config', `redirection ${punishmentRedirectionProb}% · weekend ${weekendEnabled ? 'on' : 'off'}`);
       setTimeout(() => setStatus('IDLE'), 2000);
     }, 800);
   };
@@ -87,289 +96,232 @@ const ProbabilityConfig: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 fade-in">
-      <div className="glass-panel p-8 rounded-2xl space-y-6 relative overflow-hidden border border-emerald-500/30">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Probability Configuration</h2>
-            <p className="text-zinc-400 text-xs font-mono mt-1">Adjust win/loss probabilities for each day</p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={handleReset}
-              disabled={status === 'SAVING'}
-              className="px-6 py-2 bg-zinc-700 hover:bg-zinc-600 text-zinc-300 rounded-lg font-bold text-sm transition-all"
-            >
-              Reset Defaults
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={status === 'SAVING' || !isDirty}
-              className={`px-8 py-2 rounded-lg font-bold text-sm transition-all shadow-lg flex items-center gap-2
-                ${status === 'SAVED'
-                  ? 'bg-emerald-400 text-black'
-                  : status === 'SAVING'
-                    ? 'bg-emerald-600 text-white'
-                    : isDirty
-                      ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                      : 'bg-zinc-700 text-zinc-500 cursor-not-allowed'
-                }`}
-            >
-              {status === 'SAVING' && (
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              )}
-              {status === 'SAVED' ? 'Saved ✓' : status === 'SAVING' ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Configure"
+        title="Probability configuration"
+        description="Outcome rates for each day of the week. YES and NO must always total 90% — the remaining 10% is reserved for the edge result."
+        actions={
+          <>
+            <Button variant="secondary" onClick={handleReset} disabled={status === 'SAVING'}>
+              Reset defaults
+            </Button>
+            <Button variant="primary" onClick={handleSave} disabled={status === 'SAVING' || !isDirty}>
+              {status === 'SAVED' ? 'Saved' : status === 'SAVING' ? 'Saving…' : 'Save changes'}
+            </Button>
+          </>
+        }
+      />
 
-        {/* Weekend Restriction */}
-        <div className="p-6 bg-zinc-900/50 rounded-xl border border-zinc-700/50 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white">Weekend Restriction</h3>
-              <p className="text-zinc-500 text-xs">Disable rolls on Saturday and Sunday</p>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Panel className="p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <p className="eyebrow">Scheduling</p>
+              <p className="mt-1.5 text-sm font-semibold text-white">Weekend restriction</p>
+              <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                Blocks every roll on Saturday and Sunday while the custom message is shown instead.
+              </p>
             </div>
             <button
+              type="button"
               onClick={() => { setWeekendEnabled(!weekendEnabled); setIsDirty(true); }}
-              title="Toggle Weekend Restriction"
-              aria-label="Toggle Weekend Restriction"
-              className={`relative w-16 h-8 rounded-full transition-all duration-300 ${weekendEnabled ? 'bg-emerald-500' : 'bg-zinc-700'
-                }`}
+              role="switch"
+              aria-checked={weekendEnabled}
+              aria-label="Weekend restriction"
+              className={cn(
+                'relative h-6 w-11 shrink-0 rounded-full border transition-colors duration-200',
+                weekendEnabled ? 'border-transparent bg-theme-primary' : 'border-[color:var(--line-strong)] bg-white/[0.08]'
+              )}
             >
-              <div className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow-lg transition-all duration-300 ${weekendEnabled ? 'left-9' : 'left-1'
-                }`} />
+              <span
+                className={cn(
+                  'absolute top-0.5 rounded-full bg-white shadow transition-all duration-200',
+                  weekendEnabled ? 'left-[22px]' : 'left-0.5'
+                )}
+                style={{ height: 18, width: 18 }}
+              />
             </button>
           </div>
 
           {weekendEnabled && (
-            <div className="space-y-2 animate-fade-in">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Restriction Message</label>
+            <div className="mt-4 space-y-1.5 fade-in">
+              <label className="field-label" htmlFor="weekend-message">Blocked-day message</label>
               <input
+                id="weekend-message"
                 type="text"
                 value={weekendMessage}
                 onChange={(e) => { setWeekendMessage(e.target.value); setIsDirty(true); }}
-                className="w-full bg-black/40 border border-zinc-700 rounded-lg px-4 py-3 text-zinc-300 font-mono text-sm focus:outline-none focus:border-emerald-500/50 transition-all"
-                placeholder="Enter message displayed on weekends..."
+                className="field"
+                placeholder="Shown instead of a roll on weekends…"
               />
             </div>
           )}
-        </div>
 
-        {/* Punishment Redirection Probability */}
-        <div className="p-6 bg-zinc-900/50 rounded-xl border border-red-500/30 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-red-400">Punishment Redirection</h3>
-              <p className="text-zinc-500 text-xs">Probability of being redirected to Punishment Wheel after Arbiter roll</p>
+          <div className="hairline my-4" />
+
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-white">Punishment redirection</p>
+              <p className="mt-0.5 text-xs text-zinc-500">Chance of a forced wheel spin after a roll.</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex shrink-0 items-center gap-1.5">
               <input
                 type="number"
                 min="0"
                 max="100"
+                aria-label="Punishment redirection percentage"
                 value={punishmentRedirectionProb}
                 onChange={(e) => { setPunishmentRedirectionProb(Math.min(100, Math.max(0, parseInt(e.target.value) || 0))); setIsDirty(true); }}
-                className="w-20 bg-black/40 border border-red-500/50 rounded-lg px-3 py-2 text-red-400 font-bold text-center focus:outline-none focus:border-red-400 transition-all"
+                className="field w-16 py-1.5 text-center font-mono font-bold text-red-300"
               />
-              <span className="text-red-400 font-bold">%</span>
+              <span className="text-sm font-semibold text-zinc-500">%</span>
             </div>
           </div>
-          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
             <div
-              className="h-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300"
+              className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-300"
               style={{ width: `${punishmentRedirectionProb}%` }}
             />
           </div>
-        </div>
+        </Panel>
 
-        {/* Day Probabilities */}
-        <div className="space-y-4">
-          <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Daily Probabilities</label>
-
-          <div className="grid gap-4">
+        <Panel className="p-5">
+          <p className="eyebrow">Week overview</p>
+          <div className="mt-3 grid grid-cols-7 gap-1.5">
             {days.map((day) => {
-              const isWeekend = day.dayNumber >= 5;
-
+              const locked = day.dayNumber >= 5 && weekendEnabled;
               return (
                 <div
                   key={day.dayNumber}
-                  className={`p-4 rounded-xl border transition-all ${isWeekend
-                    ? 'bg-zinc-900/30 border-zinc-800 opacity-60'
-                    : 'bg-zinc-800/30 border-white/5'
-                    }`}
+                  className={cn(
+                    'rounded-lg border px-1 py-2 text-center',
+                    locked ? 'border-[color:var(--line)] bg-white/[0.01]' : 'border-[color:var(--line)] bg-black/25'
+                  )}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className={`text-sm font-bold uppercase tracking-wider ${isWeekend ? 'text-zinc-500' : 'text-white'
-                        }`}>
-                        {day.dayName}
-                      </span>
-                      {isWeekend && (
-                        <span className="text-[10px] px-2 py-0.5 bg-zinc-700 text-zinc-400 rounded-full">
-                          {weekendEnabled ? 'Disabled' : 'Active'}
-                        </span>
-                      )}
-                    </div>
-                    <div className={`text-2xl font-black font-mono ${getDayColor(day.yesProb)}`}>
-                      {day.yesProb}% / {day.noProb}%
-                    </div>
-                  </div>
-
-                  {/* Progress Bar - showing YES, NO, and Edge portions */}
-                  <div className="h-4 bg-zinc-900 rounded-full overflow-hidden flex mb-4">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-300"
-                      style={{ width: `${(day.yesProb / 90) * 100}%` }}
-                    />
-                    <div
-                      className="h-full bg-red-500 transition-all duration-300"
-                      style={{ width: `${(day.noProb / 90) * 100}%` }}
-                    />
-                    <div
-                      className="h-full bg-purple-500 transition-all duration-300"
-                      style={{ width: '11.11%' }}
-                      title="Edge: 10%"
-                    />
-                  </div>
-
-                  {/* Sliders */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs text-emerald-400 font-bold uppercase">YES Probability</label>
-                        <span className="text-xs text-zinc-500 font-mono">{day.yesProb}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="90"
-                        value={day.yesProb}
-                        title={`${day.dayName} YES Probability`}
-                        aria-label={`${day.dayName} YES Probability`}
-                        onChange={(e) => handleDayChange(day.dayNumber, 'yesProb', e.target.value)}
-                        disabled={isWeekend && weekendEnabled}
-                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isWeekend && weekendEnabled
-                          ? 'bg-zinc-800 cursor-not-allowed'
-                          : 'bg-zinc-700 accent-emerald-500'
-                          }`}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-center">
-                        <label className="text-xs text-red-400 font-bold uppercase">NO Probability</label>
-                        <span className="text-xs text-zinc-500 font-mono">{day.noProb}%</span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="90"
-                        value={day.noProb}
-                        title={`${day.dayName} NO Probability`}
-                        aria-label={`${day.dayName} NO Probability`}
-                        onChange={(e) => handleDayChange(day.dayNumber, 'noProb', e.target.value)}
-                        disabled={isWeekend && weekendEnabled}
-                        className={`w-full h-2 rounded-lg appearance-none cursor-pointer ${isWeekend && weekendEnabled
-                          ? 'bg-zinc-800 cursor-not-allowed'
-                          : 'bg-zinc-700 accent-red-500'
-                          }`}
-                      />
-                    </div>
+                  <p className="text-[9px] uppercase tracking-wider text-zinc-600">{day.dayName.slice(0, 3)}</p>
+                  <p className={cn('mt-1 text-sm font-bold tabular-nums', locked ? 'text-zinc-600' : getDayColor(day.yesProb))}>
+                    {locked ? '—' : `${day.yesProb}%`}
+                  </p>
+                  <div className="mt-1.5 flex h-1 overflow-hidden rounded-full bg-white/[0.06]">
+                    <div className="h-full bg-emerald-500/80" style={{ width: locked ? '0%' : `${(day.yesProb / 90) * 100}%` }} />
+                    <div className="h-full bg-red-500/70" style={{ width: locked ? '0%' : `${(day.noProb / 90) * 100}%` }} />
+                    <div className="h-full bg-violet-500/70" style={{ width: locked ? '0%' : '11.11%' }} />
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
-
-        {/* Visual Week Preview */}
-        <div className="p-6 bg-zinc-900/50 rounded-xl border border-zinc-700/50">
-          <h3 className="text-sm font-bold text-zinc-400 uppercase tracking-widest mb-4">Week Overview</h3>
-          <div className="flex gap-2">
-            {days.map((day) => {
-              const isWeekend = day.dayNumber >= 5;
-              const isRestricted = isWeekend && weekendEnabled;
-
-              return (
-                <div
-                  key={day.dayNumber}
-                  className={`flex-1 p-3 rounded-lg text-center space-y-2 ${isRestricted
-                    ? 'bg-zinc-800/50 border border-zinc-700/50'
-                    : 'bg-zinc-800/30 border border-white/5'
-                    }`}
-                >
-                  <div className="text-[10px] text-zinc-500 uppercase tracking-wider">{day.dayName.slice(0, 3)}</div>
-                  <div className={`text-lg font-bold ${getDayColor(isRestricted ? 0 : day.yesProb)}`}>
-                    {isRestricted ? '✕' : `${day.yesProb}%`}
-                  </div>
-                  <div className="h-2 bg-zinc-900 rounded-full overflow-hidden flex">
-                    <div
-                      className="h-full bg-emerald-500"
-                      style={{ width: isRestricted ? '0%' : `${(day.yesProb / 90) * 100}%` }}
-                    />
-                    <div
-                      className="h-full bg-red-500"
-                      style={{ width: isRestricted ? '0%' : `${(day.noProb / 90) * 100}%` }}
-                    />
-                    <div
-                      className="h-full bg-purple-500"
-                      style={{ width: isRestricted ? '0%' : '11.11%' }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-[10px] uppercase tracking-wider text-zinc-500">
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-emerald-500/80" /> Yes</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-red-500/70" /> No</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-sm bg-violet-500/70" /> Edge 10%</span>
           </div>
-          <div className="flex items-center justify-center gap-6 mt-4 text-[10px]">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-emerald-500"></div>
-              <span className="text-zinc-500">YES</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-red-500"></div>
-              <span className="text-zinc-500">NO</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded bg-purple-500"></div>
-              <span className="text-zinc-500">EDGE (10%)</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Edge Probability Info */}
-        <div className="p-6 bg-purple-900/20 rounded-xl border border-purple-500/30">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-              <span className="text-xl">🥴</span>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-purple-400">Edge Result</h3>
-              <p className="text-xs text-zinc-500">Special bonus outcome</p>
-            </div>
-          </div>
-          <div className="flex items-center justify-between bg-black/30 p-4 rounded-lg">
-            <div>
-              <p className="text-sm text-zinc-400">Fixed Probability</p>
-              <p className="text-xs text-zinc-600">Cannot be modified by owner</p>
-            </div>
-            <div className="text-3xl font-black text-purple-400">10%</div>
-          </div>
-          <p className="text-xs text-zinc-500 mt-3">
-            When triggered, displays: "Edge X days and when you come back release the load with [random supply] 🥴"
-            <br />
-            <span className="text-purple-400">Automatically grants 1 consolation supply.</span>
-          </p>
-        </div>
-
-        {/* Footer Info */}
-        <div className="flex justify-between items-center text-[10px] text-zinc-600 font-mono pt-4 border-t border-zinc-800">
-          <span>Changes take effect immediately after saving</span>
-          <span>System Version: 1.5.0</span>
-        </div>
+        </Panel>
       </div>
+
+      <Panel className="p-5">
+        <div className="flex items-center justify-between">
+          <p className="eyebrow">Daily probabilities</p>
+          <p className="text-[10px] uppercase tracking-wider text-zinc-600">YES + NO = 90%</p>
+        </div>
+
+        <div className="mt-4 space-y-2.5">
+          {days.map((day) => {
+            const isWeekend = day.dayNumber >= 5;
+            const locked = isWeekend && weekendEnabled;
+
+            return (
+              <div
+                key={day.dayNumber}
+                className={cn(
+                  'rounded-xl border px-4 py-3 transition-colors',
+                  locked ? 'border-[color:var(--line)] bg-white/[0.01] opacity-70' : 'border-[color:var(--line)] bg-black/25'
+                )}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={cn('text-[13px] font-semibold', locked ? 'text-zinc-500' : 'text-white')}>
+                      {day.dayName}
+                    </span>
+                    {isWeekend && (
+                      <Badge tone={locked ? 'danger' : 'default'}>{locked ? 'Blocked' : 'Active'}</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-baseline gap-1.5 font-mono text-[13px] font-semibold tabular-nums">
+                    <span className="text-emerald-400">{day.yesProb}%</span>
+                    <span className="text-zinc-600">/</span>
+                    <span className="text-red-400">{day.noProb}%</span>
+                  </div>
+                </div>
+
+                <div className="mt-2.5 flex h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                  <div className="h-full bg-emerald-500/80 transition-all duration-300" style={{ width: `${(day.yesProb / 90) * 100}%` }} />
+                  <div className="h-full bg-red-500/70 transition-all duration-300" style={{ width: `${(day.noProb / 90) * 100}%` }} />
+                  <div className="h-full bg-violet-500/70 transition-all duration-300" style={{ width: '11.11%' }} />
+                </div>
+
+                <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400">Yes</label>
+                      <span className="font-mono text-[11px] text-zinc-500">{day.yesProb}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="90"
+                      value={day.yesProb}
+                      title={`${day.dayName} YES probability`}
+                      aria-label={`${day.dayName} YES probability`}
+                      onChange={(e) => handleDayChange(day.dayNumber, 'yesProb', e.target.value)}
+                      disabled={locked}
+                      className="mt-1 w-full accent-emerald-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] font-semibold uppercase tracking-wider text-red-400">No</label>
+                      <span className="font-mono text-[11px] text-zinc-500">{day.noProb}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="90"
+                      value={day.noProb}
+                      title={`${day.dayName} NO probability`}
+                      aria-label={`${day.dayName} NO probability`}
+                      onChange={(e) => handleDayChange(day.dayNumber, 'noProb', e.target.value)}
+                      disabled={locked}
+                      className="mt-1 w-full accent-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
+
+      <Panel tone="muted" className="p-5">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-white">Edge result</p>
+              <Badge tone="warning">Fixed</Badge>
+            </div>
+            <p className="mt-1.5 max-w-xl text-xs leading-relaxed text-zinc-500">
+              A 10% outcome that cannot be edited here. It grants one consolation supply and reads
+              “Edge X days — come back and release the load with a random supply.”
+            </p>
+          </div>
+          <p className="font-mono text-2xl font-bold text-violet-300">10%</p>
+        </div>
+      </Panel>
+
+      <p className="text-[10px] uppercase tracking-[0.14em] text-zinc-700">
+        Changes take effect immediately after saving · System version 1.5.0
+      </p>
     </div>
   );
 };

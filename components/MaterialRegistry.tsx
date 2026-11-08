@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { MATERIALS_LIST } from '../data/materials';
-import { Material, ItemAction } from '../types';
+import { ItemAction } from '../types';
+import type { Material } from '../types';
+import { Badge, Button, PageHeader, Panel, Stat } from './ui/Primitives';
+import { useToast } from './ui/Toast';
+import { logAudit } from '../services/auditService';
 
 const STORAGE_KEY = 'materials_registry_data';
 
 const MaterialRegistry: React.FC = () => {
+    const { toast } = useToast();
     const [materials, setMaterials] = useState<Material[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [newMaterial, setNewMaterial] = useState({ name: '', action: ItemAction.NONE, actionValue: 0 });
-    const [notification, setNotification] = useState<string | null>(null);
 
     useEffect(() => {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -19,11 +23,6 @@ const MaterialRegistry: React.FC = () => {
         }
     }, []);
 
-    const showNotif = (msg: string) => {
-        setNotification(msg);
-        setTimeout(() => setNotification(null), 3000);
-    };
-
     const handleSave = (updatedList: Material[]) => {
         setMaterials(updatedList);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedList));
@@ -32,27 +31,30 @@ const MaterialRegistry: React.FC = () => {
     const handleAdd = () => {
         if (!newMaterial.name.trim()) return;
         if (materials.some(m => m.name.toLowerCase() === newMaterial.name.trim().toLowerCase())) {
-            showNotif('Material already exists!');
+            toast('That material is already in the pool.', 'error');
             return;
         }
         const updated = [{ ...newMaterial, name: newMaterial.name.trim() }, ...materials];
         handleSave(updated);
         setNewMaterial({ name: '', action: ItemAction.NONE, actionValue: 0 });
-        showNotif('Material added! 🧪');
+        toast('Material added to the drop pool.', 'success');
+        logAudit('Added material', newMaterial.name.trim());
     };
 
     const handleDelete = (name: string) => {
         if (confirm(`Remove "${name}" from the drop pool?`)) {
             const updated = materials.filter(m => m.name !== name);
             handleSave(updated);
-            showNotif('Material removed.');
+            toast('Material removed.', 'info');
+            logAudit('Removed material', name);
         }
     };
 
     const handleReset = () => {
         if (confirm('Reset material pool to the authentic default list?')) {
             handleSave(MATERIALS_LIST.map(name => ({ name, action: ItemAction.NONE, actionValue: 0 })));
-            showNotif('Pool reset to defaults.');
+            toast('Pool reset to defaults.', 'info');
+            logAudit('Reset material pool');
         }
     };
 
@@ -60,148 +62,149 @@ const MaterialRegistry: React.FC = () => {
         m.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const isCustom = Boolean(localStorage.getItem(STORAGE_KEY));
+
     return (
-        <div className="space-y-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-white">Material Registry</h1>
-                    <p className="text-zinc-500 text-sm mt-1">Manage the Arbiter's drop pool with functional actions</p>
-                </div>
-                <div className="flex gap-2">
-                    {notification && (
-                        <div className="px-4 py-2 bg-emerald-500/20 border border-emerald-500/30 rounded-lg animate-fade-in">
-                            <span className="text-emerald-400 text-sm">{notification}</span>
+        <div className="space-y-6">
+            <PageHeader
+                eyebrow="Configure"
+                title="Material registry"
+                description="The Arbiter's drop pool. Each supply can carry an action that fires when it is pulled."
+                actions={
+                    <Button variant="danger" onClick={handleReset}>
+                        Reset to defaults
+                    </Button>
+                }
+            />
+
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+                <div className="space-y-6">
+                    <Panel tone="accent" className="space-y-4 p-5">
+                        <div>
+                            <p className="eyebrow">New supply</p>
+                            <p className="mt-1 text-xs text-zinc-500">Added to the top of the pool.</p>
                         </div>
-                    )}
-                    <button
-                        onClick={handleReset}
-                        className="px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm hover:bg-red-500/20 transition-all font-medium"
-                    >
-                        Reset to Default
-                    </button>
-                </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Add Component */}
-                <div className="md:col-span-1 space-y-6">
-                    <div className="glass-panel p-6 rounded-2xl border border-emerald-500/30 space-y-4">
-                        <h2 className="text-sm font-bold text-emerald-400 uppercase tracking-widest">Add New Material</h2>
-                        <div className="space-y-4">
-                            <div className="space-y-1">
-                                <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Name</label>
-                                <input
-                                    type="text"
-                                    value={newMaterial.name}
-                                    onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
-                                    placeholder="Enter supply name..."
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                                />
-                            </div>
+                        <div>
+                            <label className="field-label" htmlFor="material-name">Name</label>
+                            <input
+                                id="material-name"
+                                type="text"
+                                value={newMaterial.name}
+                                onChange={(e) => setNewMaterial({ ...newMaterial, name: e.target.value })}
+                                onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+                                placeholder="Enter supply name…"
+                                className="field"
+                            />
+                        </div>
 
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1">
-                                    <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Action Value</label>
-                                    <input
-                                        type="number"
-                                        value={newMaterial.actionValue}
-                                        onChange={(e) => setNewMaterial({ ...newMaterial, actionValue: parseInt(e.target.value) || 0 })}
-                                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1">
-                                <label className="text-[10px] text-zinc-500 uppercase tracking-wider ml-1">Assigned Action</label>
-                                <select
-                                    value={newMaterial.action}
-                                    onChange={(e) => setNewMaterial({ ...newMaterial, action: e.target.value as ItemAction })}
-                                    className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none"
-                                >
-                                    {Object.values(ItemAction).map(action => (
-                                        <option key={action} value={action} className="bg-zinc-900">{action.replace(/_/g, ' ')}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <button
-                                onClick={handleAdd}
-                                disabled={!newMaterial.name.trim()}
-                                className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-emerald-900/20 disabled:opacity-50 mt-2"
+                        <div>
+                            <label className="field-label" htmlFor="material-action">Assigned action</label>
+                            <select
+                                id="material-action"
+                                value={newMaterial.action}
+                                onChange={(e) => setNewMaterial({ ...newMaterial, action: e.target.value as ItemAction })}
+                                className="field"
                             >
-                                + ADD TO DROP POOL
-                            </button>
+                                {Object.values(ItemAction).map(action => (
+                                    <option key={action} value={action} className="bg-[#0b0d12]">
+                                        {action.replace(/_/g, ' ')}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
-                    </div>
 
-                    <div className="glass-panel p-6 rounded-2xl border border-white/10">
-                        <h2 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Registry Stats</h2>
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-zinc-400">Total Materials:</span>
-                                <span className="text-white font-mono font-bold">{materials.length}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-zinc-400">Registry State:</span>
-                                <span className={`font-bold ${localStorage.getItem(STORAGE_KEY) ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                    {localStorage.getItem(STORAGE_KEY) ? 'Custom' : 'Default'}
-                                </span>
-                            </div>
+                        <div>
+                            <label className="field-label" htmlFor="material-value">Action value</label>
+                            <input
+                                id="material-value"
+                                type="number"
+                                value={newMaterial.actionValue}
+                                onChange={(e) => setNewMaterial({ ...newMaterial, actionValue: parseInt(e.target.value) || 0 })}
+                                className="field field-mono"
+                            />
                         </div>
-                    </div>
+
+                        <Button
+                            variant="primary"
+                            onClick={handleAdd}
+                            disabled={!newMaterial.name.trim()}
+                            className="w-full"
+                        >
+                            Add to drop pool
+                        </Button>
+                    </Panel>
+
+                    <Panel className="space-y-3 p-5">
+                        <p className="eyebrow">Registry</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Stat label="Supplies" value={materials.length} />
+                            <Stat
+                                label="Source"
+                                value={isCustom ? 'Custom' : 'Default'}
+                                tone={isCustom ? 'warning' : 'primary'}
+                            />
+                        </div>
+                    </Panel>
                 </div>
 
-                {/* List Component */}
-                <div className="md:col-span-2 space-y-4">
+                <div className="space-y-4">
                     <div className="relative">
-                        <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg
+                            className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                         <input
-                            type="text"
-                            placeholder="Search materials..."
+                            type="search"
+                            placeholder="Search supplies…"
+                            aria-label="Search materials"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-zinc-900/50 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500/50 transition-all font-mono text-sm"
+                            className="field pl-10"
                         />
                     </div>
 
-                    <div className="glass-panel rounded-2xl border border-white/10 overflow-hidden">
-                        <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
-                            <table className="w-full text-left border-collapse">
-                                <thead className="sticky top-0 bg-zinc-900 z-10">
-                                    <tr className="border-b border-white/10">
-                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Material Name</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Action</th>
-                                        <th className="px-6 py-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Actions</th>
+                    <Panel className="overflow-hidden">
+                        <div className="max-h-[620px] overflow-auto custom-scrollbar">
+                            <table className="w-full text-left">
+                                <thead className="sticky top-0 z-10 bg-[#0b0d12]">
+                                    <tr className="border-b border-[color:var(--line)]">
+                                        <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">Supply</th>
+                                        <th className="px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">Action</th>
+                                        <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-600">Remove</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-white/5">
+                                <tbody>
                                     {filteredMaterials.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="px-6 py-12 text-center text-zinc-500 italic">
-                                                No materials found matching your search.
+                                            <td colSpan={3} className="px-4 py-14 text-center text-sm text-zinc-500">
+                                                No supplies match “{searchTerm}”.
                                             </td>
                                         </tr>
                                     ) : (
                                         filteredMaterials.map((m) => (
-                                            <tr key={m.name} className={`hover:bg-white/5 transition-colors group ${searchTerm && m.name.toLowerCase().includes(searchTerm.toLowerCase()) ? 'bg-emerald-500/5' : ''}`}>
-                                                <td className="px-6 py-4 text-white font-medium">{m.name}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`text-[10px] px-2 py-1 rounded-full border ${m.action && m.action !== ItemAction.NONE
-                                                            ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                                                            : 'bg-zinc-500/10 border-zinc-500/30 text-zinc-500'
-                                                        }`}>
-                                                        {m.action ? m.action.replace(/_/g, ' ') : 'NONE'} {m.actionValue ? `(${m.actionValue})` : ''}
-                                                    </span>
+                                            <tr key={m.name} className="group border-b border-[color:var(--line)] last:border-0 hover:bg-white/[0.02]">
+                                                <td className="px-4 py-3 text-[13px] font-medium text-zinc-100">{m.name}</td>
+                                                <td className="px-4 py-3">
+                                                    <Badge tone={m.action && m.action !== ItemAction.NONE ? 'primary' : 'default'}>
+                                                        {m.action ? m.action.replace(/_/g, ' ') : 'none'}
+                                                        {m.actionValue ? ` · ${m.actionValue}` : ''}
+                                                    </Badge>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-4 py-3 text-right">
                                                     <button
+                                                        type="button"
                                                         onClick={() => handleDelete(m.name)}
-                                                        className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                                        title="Delete Material"
+                                                        title={`Remove ${m.name}`}
+                                                        aria-label={`Remove ${m.name}`}
+                                                        className="rounded-lg border border-transparent p-2 text-zinc-600 transition-colors hover:border-red-500/25 hover:bg-red-500/10 hover:text-red-300 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
                                                     >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                         </svg>
                                                     </button>
@@ -212,7 +215,7 @@ const MaterialRegistry: React.FC = () => {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </Panel>
                 </div>
             </div>
         </div>

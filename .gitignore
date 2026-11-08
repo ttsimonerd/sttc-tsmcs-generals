@@ -5,6 +5,7 @@
 
 # testing
 /coverage
+.smoke-shots
 
 # production
 /dist
